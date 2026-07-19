@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 
 class EventType(str, Enum):
+    STATUS = "status"
     JOIN = "join"
     CHAT_MESSAGE = "chat_message"
     LIKE = "like"
@@ -59,4 +60,3 @@ class Event(BaseModel):
 
     def json_payload(self) -> dict[str, Any]:
         return self.model_dump(mode="json")
-

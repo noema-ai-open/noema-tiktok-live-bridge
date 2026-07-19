@@ -2,9 +2,11 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+from app.config import defaults
 from app.config.settings import AppConfig
 from app.connectors.base import BaseConnector
 from app.connectors.mock import MockConnector
+from app.connectors.tiktok_live import TikTokLiveConnector
 from app.events.bus import EventBus
 from app.events.dedupe import EventDeduplicator
 from app.events.normalizer import EventNormalizer
@@ -20,6 +22,7 @@ from app.storage.history import EventHistory
 from app.storage.settings import RuntimeSettings, SettingsStore, SettingsUpdate
 from app.tts.base import TTSEngine
 from app.tts.dummy import DummyEngine
+from app.tts.external import ExternalTTSEngine
 from app.tts.queue import TTSQueueWorker
 from app.tts.sapi import SAPIEngine
 
@@ -40,7 +43,7 @@ class BridgeService:
             history=self.history,
             ring_buffer_size=config.ring_buffer_size,
         )
-        self.tts_engine = self._build_tts_engine(config.tts_engine)
+        self.tts_engine = self._build_tts_engine(config.tts_engine, config)
         self.tts_worker = TTSQueueWorker(self.bus, self.tts_engine, runtime)
         self.connector: BaseConnector | None = None
         if config.mode == "mock":
@@ -48,11 +51,39 @@ class BridgeService:
                 on_event=self._on_connector_event,
                 events_per_second=config.mock_events_per_second,
             )
+        elif config.mode == "live":
+            self.connector = TikTokLiveConnector(
+                on_event=self._on_connector_event,
+                username=config.tiktok_username,
+                eulerstream_api_key=(
+                    config.eulerstream_api_key.get_secret_value()
+                    if config.eulerstream_api_key
+                    else None
+                ),
+                live_offline_poll_seconds=config.live_offline_poll_seconds,
+            )
 
     @staticmethod
-    def _build_tts_engine(configured_engine: str) -> TTSEngine:
+    def _build_tts_engine(
+        configured_engine: str, config: AppConfig | None = None
+    ) -> TTSEngine:
         if configured_engine == "dummy":
             return DummyEngine()
+        if configured_engine == "external":
+            return ExternalTTSEngine(
+                api_key=(
+                    config.external_tts_api_key.get_secret_value()
+                    if config and config.external_tts_api_key
+                    else None
+                ),
+                base_url=config.external_tts_base_url if config else None,
+                model=(
+                    config.external_tts_model
+                    if config
+                    else defaults.DEFAULT_EXTERNAL_TTS_MODEL
+                ),
+                player_command=config.external_tts_player_command if config else None,
+            )
         sapi = SAPIEngine()
         if sapi.is_available():
             return sapi

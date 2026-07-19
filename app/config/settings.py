@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.config import defaults
@@ -14,6 +14,7 @@ class AppConfig(BaseSettings):
         env_file=".env",
         env_prefix="NOEMA_",
         extra="ignore",
+        populate_by_name=True,
     )
 
     port: int = Field(default=defaults.DEFAULT_PORT, ge=1, le=65535)
@@ -26,4 +27,22 @@ class AppConfig(BaseSettings):
     dedupe_window_seconds: float = Field(
         default=defaults.DEFAULT_DEDUPE_WINDOW_SECONDS, gt=0, le=3600
     )
-    tts_engine: Literal["sapi", "dummy"] = "sapi"
+    tiktok_username: str | None = None
+    eulerstream_api_key: SecretStr | None = None
+    live_offline_poll_seconds: float = Field(
+        default=defaults.DEFAULT_LIVE_OFFLINE_POLL_SECONDS, gt=0
+    )
+    tts_engine: Literal["sapi", "dummy", "external"] = "sapi"
+    external_tts_api_key: SecretStr | None = Field(
+        default=None, validation_alias="EXTERNAL_TTS_API_KEY"
+    )
+    external_tts_base_url: str | None = Field(
+        default=None, validation_alias="EXTERNAL_TTS_BASE_URL"
+    )
+    external_tts_model: str = Field(
+        default=defaults.DEFAULT_EXTERNAL_TTS_MODEL,
+        validation_alias="EXTERNAL_TTS_MODEL",
+    )
+    external_tts_player_command: str | None = Field(
+        default=None, validation_alias="EXTERNAL_TTS_PLAYER_COMMAND"
+    )
