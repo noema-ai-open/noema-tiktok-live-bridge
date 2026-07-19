@@ -106,8 +106,11 @@ class SAPIEngine(TTSEngine):
             sapi_voice.Rate = max(-10, min(10, rate))
             sapi_voice.Volume = max(0, min(100, volume))
             sapi_voice.Speak(text, self._SVSF_IS_NOT_XML | self._SVSFLAGS_ASYNC)
-            while sapi_voice.Status.RunningState == 2:
-                if stop_event.wait(0.01):
+            # WaitUntilDone(ms) statt RunningState-Polling: RunningState ist vor
+            # dem Anlaufen 0, wodurch die Schleife sofort endete und die Ansage
+            # beim Aufräumen des COM-Objekts stumm abgebrochen wurde.
+            while not sapi_voice.WaitUntilDone(50):
+                if stop_event.is_set():
                     sapi_voice.Speak(
                         "", self._SVSFLAGS_ASYNC | self._SVSFPURGE_BEFORE_SPEAK
                     )
