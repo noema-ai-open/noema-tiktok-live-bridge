@@ -18,6 +18,10 @@ from app.filters.words import WordListFilter
 from app.pipeline import EventPipeline, ProcessingResult
 from app.storage.history import EventHistory
 from app.storage.settings import RuntimeSettings, SettingsStore, SettingsUpdate
+from app.tts.base import TTSEngine
+from app.tts.dummy import DummyEngine
+from app.tts.queue import TTSQueueWorker
+from app.tts.sapi import SAPIEngine
 
 
 class BridgeService:
@@ -36,12 +40,23 @@ class BridgeService:
             history=self.history,
             ring_buffer_size=config.ring_buffer_size,
         )
+        self.tts_engine = self._build_tts_engine(config.tts_engine)
+        self.tts_worker = TTSQueueWorker(self.bus, self.tts_engine, runtime)
         self.connector: BaseConnector | None = None
         if config.mode == "mock":
             self.connector = MockConnector(
                 on_event=self._on_connector_event,
                 events_per_second=config.mock_events_per_second,
             )
+
+    @staticmethod
+    def _build_tts_engine(configured_engine: str) -> TTSEngine:
+        if configured_engine == "dummy":
+            return DummyEngine()
+        sapi = SAPIEngine()
+        if sapi.is_available():
+            return sapi
+        return DummyEngine()
 
     @staticmethod
     def _build_filter_chain(settings: RuntimeSettings) -> FilterChain:
@@ -64,12 +79,14 @@ class BridgeService:
         await self.pipeline.process(raw)
 
     async def start(self) -> None:
+        await self.tts_worker.start()
         if self.connector is not None:
             await self.connector.connect()
 
     async def stop(self) -> None:
         if self.connector is not None:
             await self.connector.disconnect()
+        await self.tts_worker.stop()
         self.history.close()
         self.settings_store.close()
 
@@ -77,6 +94,7 @@ class BridgeService:
         settings = self.settings_store.update(update)
         self.history.set_retention(settings.retention)
         self.pipeline.filter_chain = self._build_filter_chain(settings)
+        await self.tts_worker.update_settings(settings)
         return settings
 
     async def process_fallback(self, raw: dict[str, object]) -> ProcessingResult:

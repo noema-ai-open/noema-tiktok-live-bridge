@@ -18,6 +18,15 @@ class RuntimeSettings(BaseModel):
     spam_max_repetitions: int = Field(default=2, ge=1, le=100)
     spam_window_seconds: float = Field(default=30.0, gt=0, le=3600)
     user_cooldown_seconds: float = Field(default=0.0, ge=0, le=3600)
+    tts_enabled: bool = False
+    read_username: bool = False
+    tts_max_length: int = Field(default=300, ge=1, le=10_000)
+    tts_user_cooldown_seconds: float = Field(default=0.0, ge=0, le=3600)
+    tts_volume: int = Field(default=100, ge=0, le=100)
+    tts_voice: str | None = Field(default=None, max_length=1000)
+    tts_device: str | None = Field(default=None, max_length=1000)
+    tts_queue_max: int = Field(default=100, ge=1, le=10_000)
+    tts_timeout_seconds: float = Field(default=30.0, gt=0, le=300)
 
 
 class SettingsUpdate(BaseModel):
@@ -31,6 +40,15 @@ class SettingsUpdate(BaseModel):
     spam_max_repetitions: int | None = Field(default=None, ge=1, le=100)
     spam_window_seconds: float | None = Field(default=None, gt=0, le=3600)
     user_cooldown_seconds: float | None = Field(default=None, ge=0, le=3600)
+    tts_enabled: bool | None = None
+    read_username: bool | None = None
+    tts_max_length: int | None = Field(default=None, ge=1, le=10_000)
+    tts_user_cooldown_seconds: float | None = Field(default=None, ge=0, le=3600)
+    tts_volume: int | None = Field(default=None, ge=0, le=100)
+    tts_voice: str | None = Field(default=None, max_length=1000)
+    tts_device: str | None = Field(default=None, max_length=1000)
+    tts_queue_max: int | None = Field(default=None, ge=1, le=10_000)
+    tts_timeout_seconds: float | None = Field(default=None, gt=0, le=300)
 
 
 class SettingsStore:
@@ -74,4 +92,3 @@ class SettingsStore:
     def close(self) -> None:
         with self._lock:
             self._connection.close()
-

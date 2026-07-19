@@ -4,7 +4,8 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 
-from app.api.schemas import FallbackMessage
+from app.api.schemas import FallbackMessage, TTSTestRequest
+from app.audio.devices import list_audio_devices
 from app.service import BridgeService
 from app.storage.settings import SettingsUpdate
 
@@ -36,6 +37,35 @@ async def events(
 async def update_settings(request: Request, update: SettingsUpdate) -> dict[str, object]:
     settings = await _service(request).update_settings(update)
     return settings.model_dump()
+
+
+@router.post("/tts/test", status_code=202)
+async def test_tts(request: Request, body: TTSTestRequest) -> dict[str, bool]:
+    service = _service(request)
+    settings = service.tts_worker.settings
+    if not settings.tts_enabled:
+        raise HTTPException(status_code=409, detail="TTS is disabled")
+    if not service.tts_engine.is_available():
+        raise HTTPException(status_code=409, detail="TTS engine is unavailable")
+    if not service.tts_worker.enqueue_test(body.text):
+        raise HTTPException(status_code=422, detail="text contains no speakable content")
+    return {"queued": True}
+
+
+@router.post("/tts/stop")
+async def stop_tts(request: Request) -> dict[str, bool]:
+    await _service(request).tts_worker.clear()
+    return {"stopped": True}
+
+
+@router.get("/tts/voices")
+async def tts_voices(request: Request) -> list[dict[str, str]]:
+    return _service(request).tts_engine.list_voices()
+
+
+@router.get("/audio/devices")
+async def audio_devices() -> list[dict[str, str]]:
+    return list_audio_devices()
 
 
 @router.post("/fallback/message")

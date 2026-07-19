@@ -26,4 +26,4 @@ class AppConfig(BaseSettings):
     dedupe_window_seconds: float = Field(
         default=defaults.DEFAULT_DEDUPE_WINDOW_SECONDS, gt=0, le=3600
     )
-
+    tts_engine: Literal["sapi", "dummy"] = "sapi"
