@@ -1,5 +1,12 @@
 # Einrichtung unter Windows
 
+> **Für normale Nutzung: nur Variante A (Installer).** Einfach die
+> `NOEMA-TikTok-Bridge-Setup.exe` aus dem neuesten Release herunterladen und
+> doppelklicken — fertig. PowerShell, Python und Variante B sind ausschließlich
+> für Entwicklerinnen und Entwickler gedacht, die den Quellcode zuvor per
+> `git clone` heruntergeladen haben, und werden **im Projektordner** ausgeführt,
+> nie in `C:\WINDOWS\system32`.
+
 ## Variante A: bereitgestellter Installer
 
 Falls zu einer Version ein fertiges Windows-Paket veröffentlicht wurde, sollte
