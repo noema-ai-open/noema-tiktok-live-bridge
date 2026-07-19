@@ -53,6 +53,7 @@ async def test_external_tts_posts_only_required_fields_and_plays_audio(monkeypat
         "model": "voice-model",
         "voice": "coral",
         "input": "Only this text",
+        "response_format": "wav",
     }
     assert played == {"audio": b"RIFFxxxxWAVEaudio", "content_type": "audio/wav"}
 
