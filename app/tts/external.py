@@ -53,7 +53,13 @@ class ExternalTTSEngine(TTSEngine):
 
         # Do not add usernames, device details, or any other user data here. The
         # provider receives only the model, selected voice, and text to speak.
-        payload = {"model": self.model, "voice": voice or "alloy", "input": text}
+        # WAV anfordern: unter Windows ist nur WAV ohne Zusatzplayer abspielbar.
+        payload = {
+            "model": self.model,
+            "voice": voice or "alloy",
+            "input": text,
+            "response_format": "wav",
+        }
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
