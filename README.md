@@ -1,5 +1,8 @@
 # NOEMA TikTok Live Chat Bridge
 
+> **Hinweis / Disclaimer:** Community-Projekt ohne jede Garantie. Die TikTok-Anbindung nutzt eine inoffizielle Bibliothek und kann jederzeit brechen — Details in [TIKTOK_CONNECTOR_LIMITATIONS.md](TIKTOK_CONNECTOR_LIMITATIONS.md). Kein offizielles TikTok-Produkt.
+
+
 Lokale Brücke für Chat- und Interaktionsereignisse eines TikTok-Livestreams. Der
 Dienst nimmt Ereignisse aus einer Simulation, dem experimentellen
 TikTok-LIVE-Connector oder einem manuellen Fallback entgegen, vereinheitlicht und
