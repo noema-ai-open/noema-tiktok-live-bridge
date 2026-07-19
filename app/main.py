@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api import router
 from app.config import AppConfig
 from app.service import BridgeService
+from app.version import __version__
 
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
@@ -27,7 +28,11 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
         finally:
             await service.stop()
 
-    app = FastAPI(title="NOEMA TikTok Live Chat Bridge", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(
+        title="NOEMA TikTok Live Chat Bridge",
+        version=__version__,
+        lifespan=lifespan,
+    )
     app.include_router(router)
     app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
     return app
