@@ -1,0 +1,55 @@
+name: v0.1.7 Release prüfen
+
+on:
+  push:
+    branches: ["agent/fix-release-publish-step"]
+    paths: [".github/workflows/verify-v0.1.7-release.yml"]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Latest Release und Assets prüfen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view --repo "$GITHUB_REPOSITORY" --json tagName,url,assets > release.json
+          python - <<'PY'
+          import json
+
+          with open("release.json", encoding="utf-8") as handle:
+              release = json.load(handle)
+
+          if release.get("tagName") != "v0.1.7":
+              raise SystemExit(f"Latest Release ist {release.get('tagName')!r}, erwartet wurde 'v0.1.7'.")
+
+          names = {asset.get("name") for asset in release.get("assets", [])}
+          required = {
+              "NOEMA-TikTok-Bridge-Setup.exe",
+              "NOEMA-TikTok-Bridge-Setup-v0.1.7.exe",
+          }
+          missing = sorted(required - names)
+          if missing:
+              raise SystemExit(f"Fehlende Release-Assets: {missing}")
+
+          release["verification"] = {
+              "latest": True,
+              "required_assets_present": True,
+          }
+          with open("release-verified.json", "w", encoding="utf-8") as handle:
+              json.dump(release, handle, ensure_ascii=False, indent=2)
+          PY
+
+      - name: Prüfergebnis auf dem Arbeitsbranch speichern
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          content=$(base64 -w0 release-verified.json)
+          gh api --method PUT \
+            "repos/$GITHUB_REPOSITORY/contents/.release-verification/v0.1.7.json" \
+            -f message="Release v0.1.7 erfolgreich verifiziert" \
+            -f content="$content" \
+            -f branch="agent/fix-release-publish-step"
