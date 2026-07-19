@@ -77,24 +77,8 @@ jobs:
             packaging/Output/NOEMA-TikTok-Bridge-Setup-v*.exe
           if-no-files-found: error
 
-      - name: Prüfen, ob das Release bereits existiert
-        id: release_check
+      - name: GitHub Release veröffentlichen oder aktualisieren
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release view "v${{ steps.version.outputs.version }}" --repo "$env:GITHUB_REPOSITORY" *> $null
-          if ($LASTEXITCODE -eq 0) {
-            "publish=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-            Write-Host "Release v${{ steps.version.outputs.version }} existiert bereits."
-          } else {
-            "publish=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-            Write-Host "Release v${{ steps.version.outputs.version }} wird veröffentlicht."
-          }
-
-      - name: GitHub Release veröffentlichen
-        if: steps.release_check.outputs.publish == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
@@ -104,6 +88,7 @@ jobs:
           draft: false
           prerelease: false
           make_latest: true
+          overwrite_files: true
           files: |
             packaging/Output/NOEMA-TikTok-Bridge-Setup.exe
             packaging/Output/NOEMA-TikTok-Bridge-Setup-v*.exe
