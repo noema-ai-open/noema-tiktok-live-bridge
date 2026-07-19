@@ -1,7 +1,9 @@
 # NOEMA TikTok Live Chat Bridge
 
-> **Hinweis / Disclaimer:** Community-Projekt ohne jede Garantie. Die TikTok-Anbindung nutzt eine inoffizielle Bibliothek und kann jederzeit brechen — Details in [TIKTOK_CONNECTOR_LIMITATIONS.md](TIKTOK_CONNECTOR_LIMITATIONS.md). Kein offizielles TikTok-Produkt.
+[![Latest Release](https://img.shields.io/github/v/release/noema-ai-open/noema-tiktok-live-bridge?display_name=tag&sort=semver)](https://github.com/noema-ai-open/noema-tiktok-live-bridge/releases/latest)
+[![Windows Installer](https://img.shields.io/badge/Windows-Setup-0078D4?logo=windows)](https://github.com/noema-ai-open/noema-tiktok-live-bridge/releases/latest/download/NOEMA-TikTok-Bridge-Setup.exe)
 
+> **Hinweis / Disclaimer:** Community-Projekt ohne jede Garantie. Die TikTok-Anbindung nutzt eine inoffizielle Bibliothek und kann jederzeit brechen — Details in [TIKTOK_CONNECTOR_LIMITATIONS.md](TIKTOK_CONNECTOR_LIMITATIONS.md). Kein offizielles TikTok-Produkt.
 
 Lokale Brücke für Chat- und Interaktionsereignisse eines TikTok-Livestreams. Der
 Dienst nimmt Ereignisse aus einer Simulation, dem experimentellen
@@ -13,6 +15,18 @@ werden.
 Das Projekt ist kein offizielles TikTok-Produkt. Der Live-Connector basiert auf
 der inoffiziellen Bibliothek TikTokLive und kann ohne Vorankündigung ausfallen.
 Siehe [Grenzen des TikTok-Connectors](TIKTOK_CONNECTOR_LIMITATIONS.md).
+
+## Öffentliche Windows-Version
+
+Die aktuelle stabile Windows-Version wird automatisch aus dem geprüften
+`main`-Stand gebaut und als neuestes GitHub Release veröffentlicht.
+
+- [Windows-Setup direkt herunterladen](https://github.com/noema-ai-open/noema-tiktok-live-bridge/releases/latest/download/NOEMA-TikTok-Bridge-Setup.exe)
+- [Release-Seite und Versionshinweise öffnen](https://github.com/noema-ai-open/noema-tiktok-live-bridge/releases/latest)
+
+Eine neue Version kann über eine vorhandene Installation installiert werden.
+Lokale Einstellungen und API-Schlüssel unter
+`%LOCALAPPDATA%\NOEMA\TikTokBridge` bleiben dabei erhalten.
 
 ## Funktionsumfang
 

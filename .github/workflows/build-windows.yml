@@ -5,7 +5,6 @@ on:
     branches: ["main"]
   push:
     branches: ["main"]
-    tags: ["v*"]
   workflow_dispatch:
 
 permissions:
@@ -30,8 +29,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
       - name: Abhängigkeiten installieren
         run: pip install -e ".[live,windows]" pyinstaller
+
       - name: PyInstaller ohne störendes Konsolenfenster
         run: >
           pyinstaller --noconfirm --noconsole --name noema-tiktok-bridge
@@ -40,25 +41,69 @@ jobs:
           --collect-all TikTokLive
           --hidden-import win32com.client
           scripts/windows_launcher.py
-      - name: Version bestimmen
-        shell: bash
+
+      - name: Version aus dem Quellcode bestimmen
+        id: version
+        shell: pwsh
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            echo "APP_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
-          else
-            echo "APP_VERSION=0.1.6" >> "$GITHUB_ENV"
-          fi
+          $version = python -c "from app.version import __version__; print(__version__)"
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            throw "Keine Versionsnummer in app/version.py gefunden."
+          }
+          "APP_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Baue NOEMA TikTok Live Bridge v$version"
+
       - name: Inno Setup bauen
         shell: cmd
         run: |
           choco install innosetup -y --no-progress
           "%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe" packaging\installer.iss
-      - uses: actions/upload-artifact@v4
+
+      - name: Versionierten Installer erzeugen
+        shell: pwsh
+        run: |
+          $source = "packaging/Output/NOEMA-TikTok-Bridge-Setup.exe"
+          $target = "packaging/Output/NOEMA-TikTok-Bridge-Setup-v$env:APP_VERSION.exe"
+          Copy-Item $source $target -Force
+          Write-Host "Installer: $target"
+
+      - name: Installer als Workflow-Artefakt speichern
+        uses: actions/upload-artifact@v4
         with:
-          name: NOEMA-TikTok-Bridge-Setup
-          path: packaging/Output/NOEMA-TikTok-Bridge-Setup.exe
-      - name: Release anhängen (nur bei Tag)
-        if: startsWith(github.ref, 'refs/tags/')
+          name: NOEMA-TikTok-Bridge-Setup-v${{ steps.version.outputs.version }}
+          path: |
+            packaging/Output/NOEMA-TikTok-Bridge-Setup.exe
+            packaging/Output/NOEMA-TikTok-Bridge-Setup-v*.exe
+          if-no-files-found: error
+
+      - name: Prüfen, ob das Release bereits existiert
+        id: release_check
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "v${{ steps.version.outputs.version }}" --repo "$env:GITHUB_REPOSITORY" *> $null
+          if ($LASTEXITCODE -eq 0) {
+            "publish=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+            Write-Host "Release v${{ steps.version.outputs.version }} existiert bereits."
+          } else {
+            "publish=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+            Write-Host "Release v${{ steps.version.outputs.version }} wird veröffentlicht."
+          }
+
+      - name: GitHub Release veröffentlichen
+        if: steps.release_check.outputs.publish == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          files: packaging/Output/NOEMA-TikTok-Bridge-Setup.exe
+          tag_name: v${{ steps.version.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: NOEMA TikTok Live Bridge v${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+          make_latest: true
+          files: |
+            packaging/Output/NOEMA-TikTok-Bridge-Setup.exe
+            packaging/Output/NOEMA-TikTok-Bridge-Setup-v*.exe
