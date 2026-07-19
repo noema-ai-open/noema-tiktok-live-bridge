@@ -38,3 +38,7 @@ class ConnectionUpdate(BaseModel):
     tts_engine: Literal["sapi", "dummy", "external", "deepgram"] | None = None
     deepgram_api_key: str | None = Field(default=None, max_length=500)
     eulerstream_api_key: str | None = Field(default=None, max_length=500)
+    external_tts_base_url: str | None = Field(default=None, max_length=500)
+    external_tts_model: str | None = Field(default=None, max_length=200)
+    external_tts_api_key: str | None = Field(default=None, max_length=500)
+    tts_voice: str | None = Field(default=None, max_length=200)

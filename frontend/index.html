@@ -70,6 +70,7 @@
               <div class="field field--wide">
                 <label for="conn-username">TikTok-Name (ohne @)</label>
                 <input id="conn-username" name="tiktok_username" type="text" maxlength="100" autocomplete="off" placeholder="dein_tiktok_name">
+                <p class="key-hint">Nur der öffentliche @Name — die Bridge liest als Zuschauer mit, ein Passwort ist nie nötig und wird nirgends eingegeben.</p>
               </div>
               <div class="field field--wide">
                 <label for="conn-engine">TTS-Anbieter</label>
@@ -80,10 +81,27 @@
                   <option value="dummy">Stumm (Test)</option>
                 </select>
               </div>
-              <div class="field field--wide">
+              <div class="field field--wide" data-engine-only="deepgram">
                 <label for="conn-deepgram">Deepgram-API-Key</label>
-                <input id="conn-deepgram" name="deepgram_api_key" type="password" maxlength="500" autocomplete="off" placeholder="nur nötig für Deepgram">
+                <input id="conn-deepgram" name="deepgram_api_key" type="password" maxlength="500" autocomplete="off" placeholder="Schlüssel setzen/ersetzen">
                 <p class="key-hint" id="deepgram-hint"></p>
+              </div>
+              <div class="field field--wide" data-engine-only="external">
+                <label for="conn-ext-url">API-Basisadresse</label>
+                <input id="conn-ext-url" name="external_tts_base_url" type="text" maxlength="500" autocomplete="off" placeholder="z. B. https://openrouter.ai/api/v1">
+              </div>
+              <div class="field field--wide" data-engine-only="external">
+                <label for="conn-ext-model">Modell</label>
+                <input id="conn-ext-model" name="external_tts_model" type="text" maxlength="200" autocomplete="off" placeholder="z. B. tts-1">
+              </div>
+              <div class="field field--wide" data-engine-only="external">
+                <label for="conn-ext-key">API-Schlüssel</label>
+                <input id="conn-ext-key" name="external_tts_api_key" type="password" maxlength="500" autocomplete="off" placeholder="Schlüssel setzen/ersetzen">
+                <p class="key-hint" id="external-hint"></p>
+              </div>
+              <div class="field field--wide" data-engine-only="external deepgram">
+                <label for="conn-voice">Stimme (frei eintragen)</label>
+                <input id="conn-voice" name="tts_voice" type="text" maxlength="200" autocomplete="off" placeholder="z. B. alloy oder aura-2-thalia-en">
               </div>
             </div>
             <div class="form-actions">

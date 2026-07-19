@@ -413,19 +413,38 @@ elements.stopButton.addEventListener("click", async () => {
 const connectionForm = document.querySelector("#connection-form");
 const connectionMessage = document.querySelector("#connection-message");
 
+function updateEngineFields() {
+  const engine = connectionForm.elements.tts_engine.value;
+  for (const field of connectionForm.querySelectorAll("[data-engine-only]")) {
+    const engines = field.dataset.engineOnly.split(" ");
+    field.hidden = !engines.includes(engine);
+  }
+}
+
 async function loadConnection() {
   try {
     const connection = await api("/connection");
     connectionForm.elements.mode.value = connection.mode;
     connectionForm.elements.tiktok_username.value = connection.tiktok_username || "";
     connectionForm.elements.tts_engine.value = connection.tts_engine;
+    connectionForm.elements.external_tts_base_url.value =
+      connection.external_tts_base_url || "";
+    connectionForm.elements.external_tts_model.value =
+      connection.external_tts_model || "";
+    connectionForm.elements.tts_voice.value = connection.tts_voice || "";
     document.querySelector("#deepgram-hint").textContent = connection.has_deepgram_key
-      ? "Key ist hinterlegt (Feld leer lassen zum Behalten)"
-      : "Noch kein Key hinterlegt";
+      ? "Schlüssel ist hinterlegt •••••••• (Feld leer lassen zum Behalten)"
+      : "Noch kein Schlüssel hinterlegt";
+    document.querySelector("#external-hint").textContent = connection.has_external_key
+      ? "Schlüssel ist hinterlegt •••••••• (Feld leer lassen zum Behalten)"
+      : "Noch kein Schlüssel hinterlegt";
+    updateEngineFields();
   } catch (error) {
     addLog("error", `Verbindungsdaten nicht ladbar: ${error.message}`);
   }
 }
+
+connectionForm.elements.tts_engine.addEventListener("change", updateEngineFields);
 
 connectionForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -442,8 +461,25 @@ connectionForm.addEventListener("submit", async (event) => {
     if (key) {
       body.deepgram_api_key = key;
     }
+    const externalKey = connectionForm.elements.external_tts_api_key.value.trim();
+    if (externalKey) {
+      body.external_tts_api_key = externalKey;
+    }
+    const baseUrl = connectionForm.elements.external_tts_base_url.value.trim();
+    if (baseUrl) {
+      body.external_tts_base_url = baseUrl;
+    }
+    const model = connectionForm.elements.external_tts_model.value.trim();
+    if (model) {
+      body.external_tts_model = model;
+    }
+    const voice = connectionForm.elements.tts_voice.value.trim();
+    if (voice) {
+      body.tts_voice = voice;
+    }
     await api("/connection", { method: "POST", body: JSON.stringify(body) });
     connectionForm.elements.deepgram_api_key.value = "";
+    connectionForm.elements.external_tts_api_key.value = "";
     setMessage(connectionMessage, "Übernommen — gilt sofort", "success");
     addLog("system", `Verbindung umgestellt: Modus ${body.mode}`);
     await loadConnection();

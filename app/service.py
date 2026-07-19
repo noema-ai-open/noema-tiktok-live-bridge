@@ -157,6 +157,18 @@ class BridgeService:
             config.deepgram_api_key = SecretStr(update.deepgram_api_key.strip())
         if update.eulerstream_api_key:
             config.eulerstream_api_key = SecretStr(update.eulerstream_api_key.strip())
+        if update.external_tts_base_url is not None:
+            config.external_tts_base_url = update.external_tts_base_url.strip() or None
+        if update.external_tts_model:
+            config.external_tts_model = update.external_tts_model.strip()
+        if update.external_tts_api_key:
+            config.external_tts_api_key = SecretStr(update.external_tts_api_key.strip())
+        if update.tts_voice is not None:
+            from app.storage.settings import SettingsUpdate as RuntimeUpdate
+
+            await self.update_settings(
+                RuntimeUpdate(tts_voice=update.tts_voice.strip() or None)
+            )
 
         old = self.connector
         self.connector = None
@@ -182,6 +194,14 @@ class BridgeService:
             values["NOEMA_EULERSTREAM_API_KEY"] = (
                 config.eulerstream_api_key.get_secret_value()
             )
+        if update.external_tts_base_url is not None:
+            values["EXTERNAL_TTS_BASE_URL"] = config.external_tts_base_url or ""
+        if update.external_tts_model:
+            values["EXTERNAL_TTS_MODEL"] = config.external_tts_model
+        if update.external_tts_api_key:
+            values["EXTERNAL_TTS_API_KEY"] = (
+                config.external_tts_api_key.get_secret_value()
+            )
         update_env_file(Path(".env"), values)
 
     def connection_payload(self) -> dict[str, object]:
@@ -191,6 +211,10 @@ class BridgeService:
             "tts_engine": self.config.tts_engine,
             "has_deepgram_key": self.config.deepgram_api_key is not None,
             "has_eulerstream_key": self.config.eulerstream_api_key is not None,
+            "has_external_key": self.config.external_tts_api_key is not None,
+            "external_tts_base_url": self.config.external_tts_base_url,
+            "external_tts_model": self.config.external_tts_model,
+            "tts_voice": self.settings_store.get().tts_voice,
             "tts_engine_available": self.tts_engine.is_available(),
         }
 
