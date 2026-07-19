@@ -496,3 +496,14 @@ loadConfiguration();
 pollStatus();
 window.setInterval(pollStatus, STATUS_INTERVAL_MS);
 connectWebSocket();
+
+document.querySelector("#clear-chat").addEventListener("click", () => {
+  const list = document.querySelector("#chat-list");
+  for (const entry of [...list.querySelectorAll(".chat-entry")]) {
+    entry.remove();
+  }
+  if (elements.chatEmpty && !elements.chatEmpty.isConnected) {
+    list.append(elements.chatEmpty);
+  }
+  addLog("system", "Chat-Anzeige geleert");
+});

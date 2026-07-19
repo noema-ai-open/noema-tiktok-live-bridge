@@ -221,6 +221,8 @@ class TikTokLiveConnector(BaseConnector):
         self._client: Any | None = None
         self._stopping = False
         self._connected_since: float | None = None
+        self._seen_chat: dict[tuple[str, str, str], None] = {}
+        self._last_emitted_status: str | None = None
         self._dependency: tuple[
             type[Any], dict[str, type[Any]], tuple[type[BaseException], ...], Any
         ] | None = None
@@ -284,6 +286,11 @@ class TikTokLiveConnector(BaseConnector):
         await self._emit_status("unavailable", error=message)
 
     async def _emit_status(self, status: str, *, error: str | None = None) -> None:
+        # Wiederholte gleiche Statusmeldungen (jeder Reconnect-Versuch) nicht
+        # als Event-Flut in die Pipeline geben.
+        if status == self._last_emitted_status and error is None:
+            return
+        self._last_emitted_status = status
         metadata: dict[str, object] = {"status": status}
         if error:
             metadata["error"] = error
@@ -307,6 +314,25 @@ class TikTokLiveConnector(BaseConnector):
             async def listener(event: object, event_name: str = name) -> None:
                 try:
                     mapped = map_tiktok_event(event, event_name)
+                    if event_name == "CommentEvent":
+                        # TikTokLive liefert beim (Re-)Connect die letzten
+                        # Chatnachrichten erneut; über Reconnects hinweg merken.
+                        user = mapped.get("user") or {}
+                        # event_id absichtlich NICHT im Schlüssel: ohne msg_id
+                        # ist er eine Zufalls-UUID und wäre je Replay neu.
+                        timestamp = mapped.get("timestamp")
+                        key = (
+                            str(user.get("user_id")),
+                            str(mapped.get("message")),
+                            timestamp.isoformat(timespec="seconds")
+                            if hasattr(timestamp, "isoformat")
+                            else str(timestamp),
+                        )
+                        if key in self._seen_chat:
+                            return
+                        self._seen_chat[key] = None
+                        while len(self._seen_chat) > 500:
+                            self._seen_chat.pop(next(iter(self._seen_chat)))
                     if event_name == "ConnectEvent":
                         self._status = "connected"
                         self._connected_since = time.monotonic()
