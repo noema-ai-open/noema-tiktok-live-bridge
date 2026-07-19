@@ -50,6 +50,49 @@
       </section>
 
       <aside class="control-column" aria-label="Steuerung">
+        <section class="panel settings-panel" aria-labelledby="connection-title">
+          <div class="panel-heading">
+            <div>
+              <p class="section-kicker">VERBINDUNG</p>
+              <h2 id="connection-title">TikTok &amp; Stimme</h2>
+            </div>
+          </div>
+          <form id="connection-form">
+            <div class="form-grid">
+              <div class="field field--wide">
+                <label for="conn-mode">Modus</label>
+                <select id="conn-mode" name="mode">
+                  <option value="mock">Simulation (Testdaten)</option>
+                  <option value="live">Live (eigener TikTok-Stream)</option>
+                  <option value="fallback">Ruhe / manuell (Fallback)</option>
+                </select>
+              </div>
+              <div class="field field--wide">
+                <label for="conn-username">TikTok-Name (ohne @)</label>
+                <input id="conn-username" name="tiktok_username" type="text" maxlength="100" autocomplete="off" placeholder="dein_tiktok_name">
+              </div>
+              <div class="field field--wide">
+                <label for="conn-engine">TTS-Anbieter</label>
+                <select id="conn-engine" name="tts_engine">
+                  <option value="sapi">Windows-Stimme (kostenlos)</option>
+                  <option value="deepgram">Deepgram (API-Key nötig)</option>
+                  <option value="external">Externer Anbieter (.env)</option>
+                  <option value="dummy">Stumm (Test)</option>
+                </select>
+              </div>
+              <div class="field field--wide">
+                <label for="conn-deepgram">Deepgram-API-Key</label>
+                <input id="conn-deepgram" name="deepgram_api_key" type="password" maxlength="500" autocomplete="off" placeholder="nur nötig für Deepgram">
+                <p class="key-hint" id="deepgram-hint"></p>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="primary-button" type="submit">Verbindung übernehmen</button>
+              <p class="action-message" id="connection-message" role="status"></p>
+            </div>
+          </form>
+        </section>
+
         <section class="panel emergency-panel">
           <div>
             <p class="section-kicker">SOFORTAKTION</p>

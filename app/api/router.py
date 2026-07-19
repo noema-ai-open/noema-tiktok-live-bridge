@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 
-from app.api.schemas import FallbackMessage, TTSTestRequest
+from app.api.schemas import ConnectionUpdate, FallbackMessage, TTSTestRequest
 from app.audio.devices import list_audio_devices
 from app.service import BridgeService
 from app.storage.settings import RuntimeSettings, SettingsUpdate
@@ -129,3 +129,15 @@ async def websocket_events(websocket: WebSocket) -> None:
         pass
     finally:
         await service.bus.unsubscribe(queue)
+
+
+@router.get("/connection")
+async def get_connection(request: Request) -> dict[str, object]:
+    return _service(request).connection_payload()
+
+
+@router.post("/connection")
+async def update_connection(request: Request, body: ConnectionUpdate) -> dict[str, object]:
+    service = _service(request)
+    await service.apply_connection(body)
+    return service.connection_payload()

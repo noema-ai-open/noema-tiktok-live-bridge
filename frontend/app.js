@@ -410,6 +410,52 @@ elements.stopButton.addEventListener("click", async () => {
   }
 });
 
+const connectionForm = document.querySelector("#connection-form");
+const connectionMessage = document.querySelector("#connection-message");
+
+async function loadConnection() {
+  try {
+    const connection = await api("/connection");
+    connectionForm.elements.mode.value = connection.mode;
+    connectionForm.elements.tiktok_username.value = connection.tiktok_username || "";
+    connectionForm.elements.tts_engine.value = connection.tts_engine;
+    document.querySelector("#deepgram-hint").textContent = connection.has_deepgram_key
+      ? "Key ist hinterlegt (Feld leer lassen zum Behalten)"
+      : "Noch kein Key hinterlegt";
+  } catch (error) {
+    addLog("error", `Verbindungsdaten nicht ladbar: ${error.message}`);
+  }
+}
+
+connectionForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = connectionForm.querySelector("button[type='submit']");
+  button.disabled = true;
+  setMessage(connectionMessage, "Wird übernommen …");
+  try {
+    const body = {
+      mode: connectionForm.elements.mode.value,
+      tiktok_username: connectionForm.elements.tiktok_username.value,
+      tts_engine: connectionForm.elements.tts_engine.value,
+    };
+    const key = connectionForm.elements.deepgram_api_key.value.trim();
+    if (key) {
+      body.deepgram_api_key = key;
+    }
+    await api("/connection", { method: "POST", body: JSON.stringify(body) });
+    connectionForm.elements.deepgram_api_key.value = "";
+    setMessage(connectionMessage, "Übernommen — gilt sofort", "success");
+    addLog("system", `Verbindung umgestellt: Modus ${body.mode}`);
+    await loadConnection();
+    await pollStatus();
+  } catch (error) {
+    setMessage(connectionMessage, `Übernehmen fehlgeschlagen: ${error.message}`, "error");
+  } finally {
+    button.disabled = false;
+  }
+});
+
+loadConnection();
 loadConfiguration();
 pollStatus();
 window.setInterval(pollStatus, STATUS_INTERVAL_MS);

@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
@@ -26,3 +28,13 @@ class TTSTestRequest(BaseModel):
         if not isinstance(value, str):
             raise ValueError("text must be text")
         return value
+
+
+class ConnectionUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    mode: Literal["mock", "live", "fallback"] | None = None
+    tiktok_username: str | None = Field(default=None, max_length=100)
+    tts_engine: Literal["sapi", "dummy", "external", "deepgram"] | None = None
+    deepgram_api_key: str | None = Field(default=None, max_length=500)
+    eulerstream_api_key: str | None = Field(default=None, max_length=500)

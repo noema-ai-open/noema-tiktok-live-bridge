@@ -733,8 +733,8 @@ button:disabled {
   opacity: 0.35;
 }
 .kitt[data-state="live"] span {
-  opacity: 1;
-  animation: kitt-sweep 2.4s ease-in-out infinite alternate;
+  opacity: 0.55;
+  animation: kitt-sweep 7s ease-in-out infinite alternate;
 }
 @keyframes kitt-sweep {
   from { left: 0; }
@@ -742,4 +742,10 @@ button:disabled {
 }
 @media (prefers-reduced-motion: reduce) {
   .kitt[data-state="live"] span { animation: none; opacity: 0.7; }
+}
+
+.key-hint {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.65rem;
 }

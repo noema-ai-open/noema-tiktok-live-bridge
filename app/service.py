@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from typing import TYPE_CHECKING
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +27,9 @@ from app.tts.external import ExternalTTSEngine
 from app.tts.queue import TTSQueueWorker
 from app.tts.sapi import SAPIEngine
 
+if TYPE_CHECKING:
+    from app.api.schemas import ConnectionUpdate
+
 
 class BridgeService:
     def __init__(self, config: AppConfig) -> None:
@@ -45,14 +49,17 @@ class BridgeService:
         )
         self.tts_engine = self._build_tts_engine(config.tts_engine, config)
         self.tts_worker = TTSQueueWorker(self.bus, self.tts_engine, runtime)
-        self.connector: BaseConnector | None = None
+        self._started = False
+        self.connector: BaseConnector | None = self._build_connector(config)
+
+    def _build_connector(self, config: AppConfig) -> BaseConnector | None:
         if config.mode == "mock":
-            self.connector = MockConnector(
+            return MockConnector(
                 on_event=self._on_connector_event,
                 events_per_second=config.mock_events_per_second,
             )
-        elif config.mode == "live":
-            self.connector = TikTokLiveConnector(
+        if config.mode == "live":
+            return TikTokLiveConnector(
                 on_event=self._on_connector_event,
                 username=config.tiktok_username,
                 eulerstream_api_key=(
@@ -62,6 +69,7 @@ class BridgeService:
                 ),
                 live_offline_poll_seconds=config.live_offline_poll_seconds,
             )
+        return None
 
     @staticmethod
     def _build_tts_engine(
@@ -121,16 +129,70 @@ class BridgeService:
         await self.pipeline.process(raw)
 
     async def start(self) -> None:
+        self._started = True
         await self.tts_worker.start()
         if self.connector is not None:
             await self.connector.connect()
 
     async def stop(self) -> None:
+        self._started = False
         if self.connector is not None:
             await self.connector.disconnect()
         await self.tts_worker.stop()
         self.history.close()
         self.settings_store.close()
+
+    async def apply_connection(self, update: "ConnectionUpdate") -> None:
+        """Übernimmt Verbindungs-Einstellungen aus der UI und persistiert sie in .env."""
+        config = self.config
+        if update.mode is not None:
+            config.mode = update.mode
+        if update.tiktok_username is not None:
+            config.tiktok_username = update.tiktok_username.strip().lstrip("@") or None
+        if update.tts_engine is not None:
+            config.tts_engine = update.tts_engine
+        from pydantic import SecretStr
+
+        if update.deepgram_api_key:
+            config.deepgram_api_key = SecretStr(update.deepgram_api_key.strip())
+        if update.eulerstream_api_key:
+            config.eulerstream_api_key = SecretStr(update.eulerstream_api_key.strip())
+
+        old = self.connector
+        self.connector = None
+        if old is not None:
+            await old.disconnect()
+        self.connector = self._build_connector(config)
+        if self.connector is not None and self._started:
+            await self.connector.connect()
+
+        self.tts_engine = self._build_tts_engine(config.tts_engine, config)
+        self.tts_worker.engine = self.tts_engine
+
+        from app.storage.envfile import update_env_file
+
+        values = {
+            "NOEMA_MODE": config.mode,
+            "NOEMA_TIKTOK_USERNAME": config.tiktok_username or "",
+            "NOEMA_TTS_ENGINE": config.tts_engine,
+        }
+        if update.deepgram_api_key:
+            values["DEEPGRAM_API_KEY"] = config.deepgram_api_key.get_secret_value()
+        if update.eulerstream_api_key:
+            values["NOEMA_EULERSTREAM_API_KEY"] = (
+                config.eulerstream_api_key.get_secret_value()
+            )
+        update_env_file(Path(".env"), values)
+
+    def connection_payload(self) -> dict[str, object]:
+        return {
+            "mode": self.config.mode,
+            "tiktok_username": self.config.tiktok_username,
+            "tts_engine": self.config.tts_engine,
+            "has_deepgram_key": self.config.deepgram_api_key is not None,
+            "has_eulerstream_key": self.config.eulerstream_api_key is not None,
+            "tts_engine_available": self.tts_engine.is_available(),
+        }
 
     async def update_settings(self, update: SettingsUpdate) -> RuntimeSettings:
         settings = self.settings_store.update(update)
