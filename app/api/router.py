@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, WebSocket, WebSock
 from app.api.schemas import FallbackMessage, TTSTestRequest
 from app.audio.devices import list_audio_devices
 from app.service import BridgeService
-from app.storage.settings import SettingsUpdate
+from app.storage.settings import RuntimeSettings, SettingsUpdate
 
 router = APIRouter()
 
@@ -31,6 +31,11 @@ async def events(
     request: Request, limit: int = Query(default=100, ge=1, le=1000)
 ) -> list[dict[str, object]]:
     return [event.json_payload() for event in _service(request).pipeline.latest(limit)]
+
+
+@router.get("/settings")
+async def get_settings(request: Request) -> RuntimeSettings:
+    return _service(request).settings_store.get()
 
 
 @router.post("/settings")
@@ -99,7 +104,7 @@ async def fallback_message(request: Request, body: FallbackMessage) -> dict[str,
 @router.websocket("/ws/events")
 async def websocket_events(websocket: WebSocket) -> None:
     service: BridgeService = websocket.app.state.bridge
-    queue = await service.bus.subscribe()
+    queue = await service.bus.subscribe(include_blocked=True)
     try:
         # Subscribe before accepting so an event cannot slip through between the
         # completed WebSocket handshake and queue registration.

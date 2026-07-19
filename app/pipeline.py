@@ -38,9 +38,13 @@ class EventPipeline:
     async def process(self, raw: Event | Mapping[str, Any]) -> ProcessingResult:
         event = self.normalizer.normalize(raw)
         if await self.deduplicator.is_duplicate(event):
+            await self.bus.publish_blocked(event, "duplicate")
             return ProcessingResult(False, event, "duplicate")
         filtered = await self.filter_chain.apply(event)
         if not filtered.allowed:
+            await self.bus.publish_blocked(
+                filtered.event, filtered.reason or "filtered"
+            )
             return ProcessingResult(False, filtered.event, filtered.reason)
 
         event = filtered.event
@@ -53,4 +57,3 @@ class EventPipeline:
         if limit <= 0:
             return []
         return list(self.ring_buffer)[-limit:]
-

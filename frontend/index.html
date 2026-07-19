@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>NOEMA Live Bridge</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">NOEMA / LOKALE STEUERUNG</p>
+        <h1>TikTok Live Bridge</h1>
+      </div>
+      <div class="status-cluster" aria-label="Systemstatus">
+        <div class="status-item">
+          <span class="status-dot" id="connection-dot" data-state="pending"></span>
+          <span>
+            <small>Verbindung</small>
+            <strong id="connection-status">Wird geprüft …</strong>
+          </span>
+        </div>
+        <div class="status-item status-item--plain">
+          <span>
+            <small>Modus</small>
+            <strong id="mode-status">–</strong>
+          </span>
+        </div>
+      </div>
+    </header>
+    <div class="kitt" id="kitt" aria-hidden="true"><span></span></div>
+
+    <main class="dashboard">
+      <section class="panel live-panel" aria-labelledby="live-title">
+        <div class="panel-heading">
+          <div>
+            <p class="section-kicker">LIVE-EINGANG</p>
+            <h2 id="live-title">Chat &amp; Ereignisse</h2>
+          </div>
+          <span class="socket-state" id="ws-status" data-state="pending">WS verbindet …</span>
+        </div>
+        <ol class="chat-list" id="chat-list" aria-live="polite" aria-relevant="additions">
+          <li class="empty-state" id="chat-empty">
+            <span class="empty-state__mark">↳</span>
+            <span>Noch keine Live-Ereignisse empfangen.</span>
+          </li>
+        </ol>
+      </section>
+
+      <aside class="control-column" aria-label="Steuerung">
+        <section class="panel emergency-panel">
+          <div>
+            <p class="section-kicker">SOFORTAKTION</p>
+            <h2>Sprachausgabe stoppen</h2>
+          </div>
+          <button class="danger-button" id="stop-tts" type="button">NOT-AUS</button>
+          <p class="action-message" id="stop-message" role="status"></p>
+        </section>
+
+        <section class="panel settings-panel" aria-labelledby="settings-title">
+          <div class="panel-heading">
+            <div>
+              <p class="section-kicker">KONFIGURATION</p>
+              <h2 id="settings-title">TTS &amp; Filter</h2>
+            </div>
+          </div>
+
+          <form id="settings-form">
+            <div class="form-row form-row--toggle">
+              <div>
+                <label for="tts-enabled">Text-to-Speech</label>
+                <p>Live-Nachrichten automatisch vorlesen</p>
+              </div>
+              <label class="switch">
+                <input id="tts-enabled" name="tts_enabled" type="checkbox">
+                <span class="switch-track" aria-hidden="true"><span></span></span>
+                <span class="visually-hidden">Text-to-Speech aktivieren</span>
+              </label>
+            </div>
+
+            <div class="form-grid">
+              <div class="field field--wide">
+                <label for="tts-voice">Stimme</label>
+                <select id="tts-voice" name="tts_voice"></select>
+              </div>
+              <div class="field field--wide">
+                <label for="tts-device">Audiogerät</label>
+                <select id="tts-device" name="tts_device"></select>
+              </div>
+              <div class="field field--wide">
+                <div class="field-label-line">
+                  <label for="tts-volume">Lautstärke</label>
+                  <output id="volume-output" for="tts-volume">100 %</output>
+                </div>
+                <input id="tts-volume" name="tts_volume" type="range" min="0" max="100" step="1" value="100">
+              </div>
+              <div class="field">
+                <label for="tts-cooldown">Cooldown je Nutzer</label>
+                <div class="input-unit">
+                  <input id="tts-cooldown" name="tts_user_cooldown_seconds" type="number" min="0" max="3600" step="0.5" required>
+                  <span>Sek.</span>
+                </div>
+              </div>
+              <div class="field">
+                <label for="tts-max-length">Maximallänge</label>
+                <div class="input-unit">
+                  <input id="tts-max-length" name="tts_max_length" type="number" min="1" max="10000" step="1" required>
+                  <span>Zeichen</span>
+                </div>
+              </div>
+              <div class="field field--wide">
+                <label for="blacklist">Blacklist</label>
+                <textarea id="blacklist" name="blacklist_words" rows="4" spellcheck="false" placeholder="Ein Begriff pro Zeile"></textarea>
+              </div>
+              <div class="field field--wide">
+                <label for="whitelist">Whitelist</label>
+                <textarea id="whitelist" name="whitelist_words" rows="4" spellcheck="false" placeholder="Ein Begriff pro Zeile"></textarea>
+              </div>
+              <div class="field field--wide">
+                <label for="retention">Aufbewahrung</label>
+                <select id="retention" name="retention">
+                  <option value="none">Nicht speichern</option>
+                  <option value="session">Nur diese Sitzung</option>
+                  <option value="24h">24 Stunden</option>
+                  <option value="7d">7 Tage</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="primary-button" type="submit">Einstellungen speichern</button>
+              <p class="action-message" id="settings-message" role="status"></p>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel test-panel" aria-labelledby="test-title">
+          <p class="section-kicker">AUSGABE PRÜFEN</p>
+          <h2 id="test-title">Testnachricht</h2>
+          <form id="tts-test-form" class="inline-form">
+            <label class="visually-hidden" for="tts-test-text">Text der Testnachricht</label>
+            <input id="tts-test-text" type="text" maxlength="10000" placeholder="Text zum Vorlesen" required>
+            <button class="secondary-button" type="submit">Abspielen</button>
+          </form>
+          <p class="action-message" id="test-message" role="status"></p>
+        </section>
+      </aside>
+
+      <section class="panel log-panel" aria-labelledby="log-title">
+        <div class="panel-heading">
+          <div>
+            <p class="section-kicker">DIAGNOSE</p>
+            <h2 id="log-title">Log / Ereignisse</h2>
+          </div>
+          <span class="line-count" id="log-count">0 / 200</span>
+        </div>
+        <ol class="log-list" id="log-list" aria-live="polite"></ol>
+      </section>
+    </main>
+  </body>
+</html>

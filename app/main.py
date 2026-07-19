@@ -1,12 +1,17 @@
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
+from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from app.api import router
 from app.config import AppConfig
 from app.service import BridgeService
+
+
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
 
 def create_app(config: AppConfig | None = None) -> FastAPI:
@@ -24,6 +29,7 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
 
     app = FastAPI(title="NOEMA TikTok Live Chat Bridge", version="0.1.0", lifespan=lifespan)
     app.include_router(router)
+    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
     return app
 
 
@@ -37,4 +43,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

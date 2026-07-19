@@ -56,6 +56,42 @@ async def test_settings_partial_update_is_validated(fallback_app) -> None:
             assert invalid.status_code == 422
 
 
+@pytest.mark.asyncio
+async def test_get_settings_returns_runtime_settings(fallback_app) -> None:
+    async with fallback_app.router.lifespan_context(fallback_app):
+        transport = httpx.ASGITransport(app=fallback_app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            await client.post(
+                "/settings",
+                json={"tts_enabled": True, "tts_volume": 37, "retention": "session"},
+            )
+
+            response = await client.get("/settings")
+
+            assert response.status_code == 200
+            assert response.json()["tts_enabled"] is True
+            assert response.json()["tts_volume"] == 37
+            assert response.json()["retention"] == "session"
+
+
+@pytest.mark.asyncio
+async def test_static_mount_serves_frontend_without_shadowing_api(fallback_app) -> None:
+    async with fallback_app.router.lifespan_context(fallback_app):
+        transport = httpx.ASGITransport(app=fallback_app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            index = await client.get("/")
+            script = await client.get("/app.js")
+            status = await client.get("/status")
+
+    assert index.status_code == 200
+    assert "text/html" in index.headers["content-type"]
+    assert "TikTok Live Bridge" in index.text
+    assert script.status_code == 200
+    assert "javascript" in script.headers["content-type"]
+    assert status.status_code == 200
+    assert status.headers["content-type"].startswith("application/json")
+
+
 def test_websocket_outputs_filtered_fallback_event(fallback_app) -> None:
     with TestClient(fallback_app) as client:
         with client.websocket_connect("/ws/events") as websocket:
@@ -69,6 +105,26 @@ def test_websocket_outputs_filtered_fallback_event(fallback_app) -> None:
             assert event["message"] == "live local text"
 
 
+def test_websocket_broadcasts_blocked_event_with_reason(fallback_app) -> None:
+    with TestClient(fallback_app) as client:
+        client.post("/settings", json={"max_message_length": 4})
+        with client.websocket_connect("/ws/events") as websocket:
+            response = client.post(
+                "/fallback/message",
+                json={"display_name": "Blocked Viewer", "message": "too long"},
+            )
+            assert response.status_code == 200
+            assert response.json()["accepted"] is False
+
+            broadcast = websocket.receive_json()
+
+    assert broadcast == {
+        "type": "blocked",
+        "reason": "max_length",
+        "event": response.json()["event"],
+    }
+
+
 def test_fallback_endpoint_rejects_non_fallback_mode(tmp_path) -> None:
     from app.config import AppConfig
     from app.main import create_app
@@ -79,4 +135,3 @@ def test_fallback_endpoint_rejects_non_fallback_mode(tmp_path) -> None:
             "/fallback/message", json={"display_name": "Viewer", "message": "hello"}
         )
     assert response.status_code == 409
-

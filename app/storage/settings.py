@@ -78,7 +78,9 @@ class SettingsStore:
         return RuntimeSettings.model_validate(values)
 
     def update(self, update: SettingsUpdate) -> RuntimeSettings:
-        changes = update.model_dump(exclude_none=True)
+        # Explicit null clears nullable selections such as voice/device, while
+        # omitted fields retain their current value.
+        changes = update.model_dump(exclude_unset=True)
         current = self.get()
         validated = RuntimeSettings.model_validate({**current.model_dump(), **changes})
         with self._lock:

@@ -6,7 +6,7 @@ import unicodedata
 from collections import deque
 from html.parser import HTMLParser
 
-from app.events.bus import EventBus
+from app.events.bus import BusEvent, EventBus
 from app.events.models import Event, EventType
 from app.storage.settings import RuntimeSettings
 from app.tts.base import TTSEngine
@@ -53,7 +53,7 @@ class TTSQueueWorker:
         self.settings = settings
         self._pending: deque[str] = deque()
         self._pending_event = asyncio.Event()
-        self._event_queue: asyncio.Queue[Event] | None = None
+        self._event_queue: asyncio.Queue[BusEvent] | None = None
         self._listener_task: asyncio.Task[None] | None = None
         self._speaker_task: asyncio.Task[None] | None = None
         self._current_speech: asyncio.Task[None] | None = None
@@ -138,6 +138,8 @@ class TTSQueueWorker:
             return
         while True:
             event = await queue.get()
+            if not isinstance(event, Event):
+                continue
             if event.event_type != EventType.CHAT_MESSAGE or event.message is None:
                 continue
             now = time.monotonic()
