@@ -1,0 +1,53 @@
+name: Windows-Installer bauen
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e '.[dev]'
+      - run: python -m pytest -q
+
+  installer:
+    needs: tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Abhängigkeiten installieren
+        run: pip install -e ".[live,windows]" pyinstaller
+      - name: PyInstaller (onedir)
+        run: >
+          pyinstaller --noconfirm --name noema-tiktok-bridge
+          --add-data "frontend;frontend"
+          --add-data ".env.example;."
+          --collect-all TikTokLive
+          --hidden-import win32com.client
+          scripts/windows_launcher.py
+      - name: Version bestimmen
+        shell: bash
+        run: echo "APP_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+      - name: Inno Setup bauen
+        shell: cmd
+        run: |
+          choco install innosetup -y --no-progress
+          "%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe" packaging\installer.iss
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NOEMA-TikTok-Bridge-Setup
+          path: packaging/Output/NOEMA-TikTok-Bridge-Setup.exe
+      - name: Release anhängen (nur bei Tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: packaging/Output/NOEMA-TikTok-Bridge-Setup.exe

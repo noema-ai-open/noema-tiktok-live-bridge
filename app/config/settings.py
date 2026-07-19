@@ -32,7 +32,10 @@ class AppConfig(BaseSettings):
     live_offline_poll_seconds: float = Field(
         default=defaults.DEFAULT_LIVE_OFFLINE_POLL_SECONDS, gt=0
     )
-    tts_engine: Literal["sapi", "dummy", "external"] = "sapi"
+    tts_engine: Literal["sapi", "dummy", "external", "deepgram"] = "sapi"
+    deepgram_api_key: SecretStr | None = Field(
+        default=None, validation_alias="DEEPGRAM_API_KEY"
+    )
     external_tts_api_key: SecretStr | None = Field(
         default=None, validation_alias="EXTERNAL_TTS_API_KEY"
     )
