@@ -1,0 +1,83 @@
+name: v0.1.7 jetzt veröffentlichen
+
+on:
+  push:
+    branches: ["agent/fix-release-publish-step"]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Abhängigkeiten installieren
+        run: pip install -e ".[live,windows]" pyinstaller
+
+      - name: PyInstaller ohne störendes Konsolenfenster
+        run: >
+          pyinstaller --noconfirm --noconsole --name noema-tiktok-bridge
+          --add-data "frontend;frontend"
+          --add-data ".env.example;."
+          --collect-all TikTokLive
+          --hidden-import win32com.client
+          scripts/windows_launcher.py
+
+      - name: Version aus dem Quellcode prüfen
+        id: version
+        shell: pwsh
+        run: |
+          $version = python -c "from app.version import __version__; print(__version__)"
+          if ($version -ne "0.1.7") {
+            throw "Erwartet wurde Version 0.1.7, gefunden wurde $version."
+          }
+          "APP_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Inno Setup bauen
+        shell: cmd
+        run: |
+          choco install innosetup -y --no-progress
+          "%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe" packaging\installer.iss
+
+      - name: Versionierten Installer erzeugen
+        shell: pwsh
+        run: |
+          Copy-Item \
+            "packaging/Output/NOEMA-TikTok-Bridge-Setup.exe" \
+            "packaging/Output/NOEMA-TikTok-Bridge-Setup-v0.1.7.exe" \
+            -Force
+
+      - name: GitHub Release v0.1.7 veröffentlichen
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.1.7
+          target_commitish: main
+          name: NOEMA TikTok Live Bridge v0.1.7
+          body: |
+            ## NOEMA TikTok Live Bridge v0.1.7
+
+            Stabile öffentliche Windows-Version mit NOEMA-Oberfläche und korrigiertem Start ohne Konsolenfenster.
+
+            ### Enthalten
+            - NOEMA Dark/Gold/Blue/Cyan Frontend
+            - sichtbare Versionsnummer
+            - verbesserte Chat-Deduplizierung
+            - ruhiger Status-Event-Feed
+            - Windows-Launcher-Fix für PyInstaller `--noconsole`
+            - lokale Logdatei unter `%LOCALAPPDATA%\NOEMA\TikTokBridge\logs\bridge.log`
+
+            Die neue Version kann über eine vorhandene Installation installiert werden. Lokale Einstellungen und API-Schlüssel bleiben erhalten.
+          draft: false
+          prerelease: false
+          make_latest: true
+          overwrite_files: true
+          files: |
+            packaging/Output/NOEMA-TikTok-Bridge-Setup.exe
+            packaging/Output/NOEMA-TikTok-Bridge-Setup-v0.1.7.exe
