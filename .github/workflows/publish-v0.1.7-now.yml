@@ -48,11 +48,7 @@ jobs:
 
       - name: Versionierten Installer erzeugen
         shell: pwsh
-        run: |
-          Copy-Item \
-            "packaging/Output/NOEMA-TikTok-Bridge-Setup.exe" \
-            "packaging/Output/NOEMA-TikTok-Bridge-Setup-v0.1.7.exe" \
-            -Force
+        run: Copy-Item "packaging/Output/NOEMA-TikTok-Bridge-Setup.exe" "packaging/Output/NOEMA-TikTok-Bridge-Setup-v0.1.7.exe" -Force
 
       - name: GitHub Release v0.1.7 veröffentlichen
         uses: softprops/action-gh-release@v2
