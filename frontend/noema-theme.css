@@ -247,3 +247,121 @@ textarea:focus-visible {
     gap: 7px;
   }
 }
+
+/* --- Feinschliff v0.1.12 ------------------------------------------------ */
+
+/* Kopfzeile + KITT-Balken bleiben beim Scrollen sichtbar */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+/* Auswahlfelder mit eigenem goldenen Pfeil statt Systemoptik */
+select {
+  appearance: none;
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23ffd86a' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+}
+
+/* Eingaben: goldener Fokus-Rahmen ohne Halo */
+input[type="text"]:focus-visible,
+input[type="password"]:focus-visible,
+input[type="number"]:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--noema-gold-bright);
+}
+
+input[type="password"] {
+  width: 100%;
+  min-height: 39px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+  color: var(--text);
+  background: #09090d;
+}
+
+input[type="password"]:hover {
+  border-color: rgba(61, 139, 255, 0.30);
+}
+
+input[type="range"] {
+  accent-color: var(--noema-gold-bright);
+}
+
+/* Geschenke und Abos springen in der Liste ins Auge */
+.chat-entry:has(.event-badge[data-type="gift"]),
+.chat-entry:has(.event-badge[data-type="subscribe"]) {
+  border-left: 2px solid var(--noema-gold);
+  background: rgba(244, 178, 58, 0.045);
+}
+
+.chat-entry:has(.event-badge[data-type="chat_message"]) .chat-message {
+  color: #edeff4;
+}
+
+/* Log-Ebenen klar unterscheidbar */
+.log-level[data-level="system"] {
+  color: var(--noema-blue-bright);
+}
+
+.log-level[data-level="error"] {
+  color: #ff8f8f;
+}
+
+/* Schlüssel-anzeigen-Knopf im Theme-Look */
+.key-reveal {
+  border-color: var(--noema-blue-border);
+  border-radius: 5px;
+  color: var(--noema-blue-bright);
+  background: rgba(61, 139, 255, 0.06);
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.key-reveal:hover {
+  border-color: rgba(111, 176, 255, 0.48);
+  color: #a9d0ff;
+  background: rgba(61, 139, 255, 0.12);
+}
+
+/* Knöpfe: fühlbarer Druckpunkt, keine Halos */
+.primary-button,
+.secondary-button,
+.danger-button {
+  border-radius: 7px;
+}
+
+.primary-button:active {
+  transform: translateY(1px);
+}
+
+.secondary-button:active,
+.danger-button:active {
+  transform: translateY(1px);
+}
+
+/* Statuspunkt pulsiert dezent, solange die Verbindung geprüft wird */
+.status-dot[data-state="pending"] {
+  animation: noema-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes noema-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-dot[data-state="pending"] {
+    animation: none;
+  }
+}
+
+/* Leerzustand mit etwas mehr Ruhe */
+.empty-state__mark {
+  color: var(--noema-gold-bright);
+}
