@@ -66,8 +66,9 @@ class EdgeTTSEngine(ExternalTTSEngine):
     """Microsoft-Edge-Neural-Stimmen (kostenlos, kein API-Schlüssel).
 
     Nutzt den inoffiziellen Edge-Vorlese-Dienst über die Bibliothek
-    edge-tts; Audio kommt als MP3 und wird lokal zu WAV dekodiert,
-    damit die Wiedergabe unter Windows ohne Zusatzplayer funktioniert.
+    edge-tts; Audio kommt als MP3 und wird unter Windows direkt über die
+    eingebaute Multimedia-Schnittstelle abgespielt (kein Decoder-Paket
+    nötig, siehe ExternalTTSEngine._play_windows_blocking).
     """
 
     def __init__(self, *, player_command: str | None = None) -> None:
@@ -126,35 +127,10 @@ class EdgeTTSEngine(ExternalTTSEngine):
                 "(z. B. de-DE-KatjaNeural)"
             )
 
-        wav = self._mp3_to_wav(bytes(audio))
         try:
-            await self._play(wav, "audio/wav")
+            await self._play(bytes(audio), "audio/mpeg")
         except TTSError:
             raise
         except Exception as exc:
             logger.exception("Edge TTS audio playback failed")
             raise TTSError("Edge-TTS: Wiedergabe fehlgeschlagen (siehe Log)") from exc
-
-    @staticmethod
-    def _mp3_to_wav(mp3: bytes) -> bytes:
-        try:
-            import miniaudio
-        except ImportError as exc:
-            raise TTSError(
-                "Edge-TTS: MP3-Decoder fehlt (Paket miniaudio nicht installiert)"
-            ) from exc
-        try:
-            decoded = miniaudio.decode(mp3)
-        except Exception as exc:
-            raise TTSError("Edge-TTS: Audio nicht dekodierbar") from exc
-
-        import io
-        import wave
-
-        buffer = io.BytesIO()
-        with wave.open(buffer, "wb") as wav:
-            wav.setnchannels(decoded.nchannels)
-            wav.setsampwidth(decoded.sample_width)
-            wav.setframerate(decoded.sample_rate)
-            wav.writeframes(decoded.samples.tobytes())
-        return buffer.getvalue()

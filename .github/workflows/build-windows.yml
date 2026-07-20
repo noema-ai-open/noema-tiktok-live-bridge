@@ -40,7 +40,6 @@ jobs:
           --add-data ".env.example;."
           --collect-all TikTokLive
           --collect-all edge_tts
-          --collect-all miniaudio
           --collect-all aiohttp
           --collect-all multidict
           --collect-all yarl

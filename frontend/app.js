@@ -622,6 +622,17 @@ pollStatus();
 window.setInterval(pollStatus, STATUS_INTERVAL_MS);
 connectWebSocket();
 
+// Ein länger im Hintergrund liegender oder vergessener zweiter Tab zeigt
+// sonst einen veralteten Stand (z. B. TTS-Schalter), der beim nächsten
+// Speichern versehentlich den echten, zwischenzeitlich geänderten Stand
+// überschreibt. Beim Zurückwechseln aktiv neu laden, nicht nur beim Start.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    loadConnection();
+    loadConfiguration();
+  }
+});
+
 document.querySelector("#clear-chat").addEventListener("click", () => {
   const list = document.querySelector("#chat-list");
   for (const entry of [...list.querySelectorAll(".chat-entry")]) {

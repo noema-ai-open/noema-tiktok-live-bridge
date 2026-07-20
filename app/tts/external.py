@@ -31,6 +31,7 @@ class ExternalTTSEngine(TTSEngine):
         self.model = model
         self.player_command = player_command.strip() if player_command else ""
         self._process: asyncio.subprocess.Process | None = None
+        self._mci_alias: str | None = None
 
     def is_available(self) -> bool:
         return bool(self.api_key and self.base_url)
@@ -160,8 +161,8 @@ class ExternalTTSEngine(TTSEngine):
             with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as temporary:
                 temporary.write(audio)
                 path = Path(temporary.name)
-            if platform.system() == "Windows" and is_wav:
-                await asyncio.to_thread(self._play_windows_wav, path)
+            if platform.system() == "Windows" and suffix in (".wav", ".mp3"):
+                await asyncio.to_thread(self._play_windows_blocking, path)
             elif self.player_command:
                 await self._play_with_command(path)
             else:
@@ -176,11 +177,32 @@ class ExternalTTSEngine(TTSEngine):
                 except OSError:
                     logger.warning("Could not remove temporary TTS audio file")
 
-    @staticmethod
-    def _play_windows_wav(path: Path) -> None:
-        import winsound
+    def _play_windows_blocking(self, path: Path) -> None:
+        """WAV oder MP3 über die eingebaute Windows-Multimedia-Schnittstelle
+        (winmm.dll/MCI) abspielen — Teil jeder Windows-Installation, kein
+        zusätzliches Paket nötig (im Unterschied zu einem MP3-Decoder-Modul,
+        das sich in einer gepackten .exe nur unzuverlässig mitbündeln lässt).
+        """
+        import ctypes
+        from uuid import uuid4
 
-        winsound.PlaySound(str(path), winsound.SND_FILENAME)
+        winmm = ctypes.windll.winmm
+        alias = f"noema_tts_{uuid4().hex}"
+        buffer = ctypes.create_unicode_buffer(256)
+
+        def send(command: str) -> None:
+            error = winmm.mciSendStringW(command, buffer, len(buffer), None)
+            if error:
+                winmm.mciGetErrorStringW(error, buffer, len(buffer))
+                raise TTSError(f"Windows-Wiedergabe (MCI) fehlgeschlagen: {buffer.value}")
+
+        send(f'open "{path}" alias {alias}')
+        self._mci_alias = alias
+        try:
+            send(f"play {alias} wait")
+        finally:
+            winmm.mciSendStringW(f"close {alias}", None, 0, None)
+            self._mci_alias = None
 
     async def _play_with_command(self, path: Path) -> None:
         command = shlex.split(self.player_command, posix=os.name != "nt")
@@ -212,10 +234,12 @@ class ExternalTTSEngine(TTSEngine):
                 process.terminate()
             except ProcessLookupError:
                 pass
-        if platform.system() == "Windows":
+        if platform.system() == "Windows" and self._mci_alias:
             try:
-                import winsound
+                import ctypes
 
-                winsound.PlaySound(None, winsound.SND_PURGE)
-            except (ImportError, RuntimeError):
+                ctypes.windll.winmm.mciSendStringW(
+                    f"stop {self._mci_alias}", None, 0, None
+                )
+            except OSError:
                 pass

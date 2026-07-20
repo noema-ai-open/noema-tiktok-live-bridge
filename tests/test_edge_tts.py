@@ -1,7 +1,5 @@
-import io
 import sys
 import types
-import wave
 
 import pytest
 
@@ -28,15 +26,7 @@ def _fake_edge_module(chunks):
 
 
 @pytest.mark.asyncio
-async def test_edge_tts_decodes_stream_to_wav(monkeypatch) -> None:
-    pcm = b"\x00\x01" * 2400
-    wav_buffer = io.BytesIO()
-    with wave.open(wav_buffer, "wb") as wav_file:
-        wav_file.setnchannels(1)
-        wav_file.setsampwidth(2)
-        wav_file.setframerate(24000)
-        wav_file.writeframes(pcm)
-
+async def test_edge_tts_plays_assembled_mp3_directly(monkeypatch) -> None:
     monkeypatch.setitem(
         sys.modules,
         "edge_tts",
@@ -49,13 +39,6 @@ async def test_edge_tts_decodes_stream_to_wav(monkeypatch) -> None:
         ),
     )
     engine = EdgeTTSEngine()
-    seen = {}
-
-    def fake_decode(mp3: bytes) -> bytes:
-        seen["mp3"] = mp3
-        return wav_buffer.getvalue()
-
-    monkeypatch.setattr(EdgeTTSEngine, "_mp3_to_wav", staticmethod(fake_decode))
     played = {}
 
     async def fake_play(audio, content_type):
@@ -64,9 +47,8 @@ async def test_edge_tts_decodes_stream_to_wav(monkeypatch) -> None:
     monkeypatch.setattr(engine, "_play", fake_play)
     await engine.speak("Hallo", "de-DE-KatjaNeural", 0, 100, None)
 
-    assert seen["mp3"] == b"mp3-part-1mp3-part-2"
-    assert played["content_type"] == "audio/wav"
-    assert played["audio"][:4] == b"RIFF"
+    assert played["audio"] == b"mp3-part-1mp3-part-2"
+    assert played["content_type"] == "audio/mpeg"
 
 
 @pytest.mark.asyncio
