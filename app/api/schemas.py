@@ -35,7 +35,7 @@ class ConnectionUpdate(BaseModel):
 
     mode: Literal["mock", "live", "fallback"] | None = None
     tiktok_username: str | None = Field(default=None, max_length=100)
-    tts_engine: Literal["sapi", "dummy", "external", "deepgram"] | None = None
+    tts_engine: Literal["sapi", "edge", "dummy", "external", "deepgram"] | None = None
     deepgram_api_key: str | None = Field(default=None, max_length=500)
     eulerstream_api_key: str | None = Field(default=None, max_length=500)
     external_tts_base_url: str | None = Field(default=None, max_length=500)

@@ -39,6 +39,8 @@ jobs:
           --add-data "frontend;frontend"
           --add-data ".env.example;."
           --collect-all TikTokLive
+          --collect-all edge_tts
+          --collect-all miniaudio
           --hidden-import win32com.client
           scripts/windows_launcher.py
 

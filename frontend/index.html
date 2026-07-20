@@ -82,6 +82,7 @@
                 <label for="conn-engine">TTS-Anbieter</label>
                 <select id="conn-engine" name="tts_engine">
                   <option value="sapi">Windows-Stimme (kostenlos)</option>
+                  <option value="edge">Microsoft Edge-Stimmen (kostenlos, viele Sprachen)</option>
                   <option value="deepgram">Deepgram (API-Key nötig)</option>
                   <option value="external">Externer Anbieter (.env)</option>
                   <option value="dummy">Stumm (Test)</option>
@@ -107,9 +108,9 @@
                 <p class="key-hint" id="external-hint"></p>
                 <button class="ghost-button key-reveal" type="button" data-reveal-key="external_tts_api_key" data-target="conn-ext-key" hidden>Gespeicherten Schlüssel anzeigen</button>
               </div>
-              <div class="field field--wide" data-engine-only="external deepgram">
+              <div class="field field--wide" data-engine-only="external deepgram edge">
                 <label for="conn-voice">Stimme (frei eintragen)</label>
-                <input id="conn-voice" name="tts_voice" type="text" maxlength="200" autocomplete="off" placeholder="z. B. alloy oder aura-2-thalia-en">
+                <input id="conn-voice" name="tts_voice" type="text" maxlength="200" autocomplete="off" placeholder="z. B. alloy, aura-2-thalia-en oder de-DE-KatjaNeural">
               </div>
             </div>
             <div class="form-actions">

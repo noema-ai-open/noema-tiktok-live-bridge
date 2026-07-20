@@ -77,6 +77,12 @@ class BridgeService:
     ) -> TTSEngine:
         if configured_engine == "dummy":
             return DummyEngine()
+        if configured_engine == "edge":
+            from app.tts.edge import EdgeTTSEngine
+
+            return EdgeTTSEngine(
+                player_command=config.external_tts_player_command if config else None,
+            )
         if configured_engine == "deepgram":
             from app.tts.deepgram import DeepgramTTSEngine
 
