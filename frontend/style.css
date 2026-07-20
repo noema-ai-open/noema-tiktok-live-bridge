@@ -749,3 +749,19 @@ button:disabled {
   color: var(--muted);
   font-size: 0.65rem;
 }
+
+.key-reveal {
+  margin-top: 4px;
+  padding: 2px 8px;
+  background: transparent;
+  border: 1px solid var(--muted);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 0.65rem;
+  cursor: pointer;
+}
+
+.key-reveal:hover {
+  color: var(--fg, #eee);
+  border-color: var(--fg, #eee);
+}

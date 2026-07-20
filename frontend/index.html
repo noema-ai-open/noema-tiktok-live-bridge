@@ -91,6 +91,7 @@
                 <label for="conn-deepgram">Deepgram-API-Key</label>
                 <input id="conn-deepgram" name="deepgram_api_key" type="password" maxlength="500" autocomplete="off" placeholder="Schlüssel setzen/ersetzen">
                 <p class="key-hint" id="deepgram-hint"></p>
+                <button class="ghost-button key-reveal" type="button" data-reveal-key="deepgram_api_key" data-target="conn-deepgram" hidden>Gespeicherten Schlüssel anzeigen</button>
               </div>
               <div class="field field--wide" data-engine-only="external">
                 <label for="conn-ext-url">API-Basisadresse</label>
@@ -104,6 +105,7 @@
                 <label for="conn-ext-key">API-Schlüssel</label>
                 <input id="conn-ext-key" name="external_tts_api_key" type="password" maxlength="500" autocomplete="off" placeholder="Schlüssel setzen/ersetzen">
                 <p class="key-hint" id="external-hint"></p>
+                <button class="ghost-button key-reveal" type="button" data-reveal-key="external_tts_api_key" data-target="conn-ext-key" hidden>Gespeicherten Schlüssel anzeigen</button>
               </div>
               <div class="field field--wide" data-engine-only="external deepgram">
                 <label for="conn-voice">Stimme (frei eintragen)</label>

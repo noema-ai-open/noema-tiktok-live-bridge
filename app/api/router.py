@@ -136,6 +136,24 @@ async def get_connection(request: Request) -> dict[str, object]:
     return _service(request).connection_payload()
 
 
+@router.get("/connection/keys")
+async def get_connection_keys(request: Request) -> dict[str, object]:
+    """Klartext-Schlüssel auf ausdrücklichen Wunsch (lokale App, localhost)."""
+    config = _service(request).config
+    return {
+        "deepgram_api_key": (
+            config.deepgram_api_key.get_secret_value()
+            if config.deepgram_api_key
+            else None
+        ),
+        "external_tts_api_key": (
+            config.external_tts_api_key.get_secret_value()
+            if config.external_tts_api_key
+            else None
+        ),
+    }
+
+
 @router.post("/connection")
 async def update_connection(request: Request, body: ConnectionUpdate) -> dict[str, object]:
     service = _service(request)
