@@ -1,3 +1,8 @@
+<p align="center">
+  <img src="frontend/noema-wordmark.png" alt="NOEMA" width="420">
+</p>
+<p align="center"><strong>TikTok Live Bridge</strong> — Chat wird Stimme. Lokal, live, deins.</p>
+
 # NOEMA TikTok Live Chat Bridge
 
 [![Latest Release](https://img.shields.io/github/v/release/noema-ai-open/noema-tiktok-live-bridge?display_name=tag&sort=semver)](https://github.com/noema-ai-open/noema-tiktok-live-bridge/releases/latest)

@@ -361,6 +361,27 @@ input[type="range"] {
   }
 }
 
+/* Markenzeichen in der Kopfzeile: Original-NOEMA-Wortmarke */
+.brand-word {
+  display: block;
+  height: 26px;
+  width: auto;
+  margin-bottom: 6px;
+}
+
+.eyebrow--sub {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+}
+
+@media (max-width: 640px) {
+  .brand-word {
+    height: 22px;
+  }
+}
+
 /* Leerzustand mit etwas mehr Ruhe */
 .empty-state__mark {
   color: var(--noema-gold-bright);
