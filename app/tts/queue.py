@@ -9,7 +9,7 @@ from html.parser import HTMLParser
 from app.events.bus import BusEvent, EventBus
 from app.events.models import Event, EventType
 from app.storage.settings import RuntimeSettings
-from app.tts.base import TTSEngine
+from app.tts.base import TTSEngine, TTSError
 
 logger = logging.getLogger(__name__)
 
@@ -185,6 +185,12 @@ class TTSQueueWorker:
         if current is not None:
             await asyncio.gather(current, return_exceptions=True)
 
+    async def _notify(self, text: str) -> None:
+        try:
+            await self.bus.publish_system(text)
+        except Exception:
+            logger.exception("Could not broadcast TTS notice")
+
     def _safe_engine_stop(self) -> None:
         try:
             self.engine.stop()
@@ -215,13 +221,20 @@ class TTSQueueWorker:
                 await asyncio.wait_for(speech, timeout=settings.tts_timeout_seconds)
             except TimeoutError:
                 self._safe_engine_stop()
+                await self._notify(
+                    f"TTS: Zeitüberschreitung nach {settings.tts_timeout_seconds:g} s — Wiedergabe abgebrochen"
+                )
             except asyncio.CancelledError:
                 if asyncio.current_task() and asyncio.current_task().cancelling():
                     speech.cancel()
                     raise
                 # clear() deliberately cancels only the current utterance.
+            except TTSError as exc:
+                logger.error("TTS failed: %s", exc)
+                await self._notify(str(exc))
             except Exception:
                 logger.exception("TTS engine failed while speaking")
+                await self._notify("TTS: interner Fehler bei der Sprachausgabe (siehe Log)")
             finally:
                 if self._current_speech is speech:
                     self._current_speech = None

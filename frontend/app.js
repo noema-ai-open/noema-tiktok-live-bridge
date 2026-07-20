@@ -290,6 +290,10 @@ function eventSummary(event) {
 }
 
 function handleSocketMessage(payload) {
+  if (payload && payload.type === "system" && payload.text) {
+    addLog("system", payload.text);
+    return;
+  }
   if (payload && payload.type === "blocked" && payload.event) {
     addLog(
       "blocked",
@@ -438,6 +442,10 @@ async function loadConnection() {
     document.querySelector("#external-hint").textContent = connection.has_external_key
       ? "Schlüssel ist hinterlegt •••••••• (Feld leer lassen zum Behalten)"
       : "Noch kein Schlüssel hinterlegt";
+    document.querySelector("[data-reveal-key='deepgram_api_key']").hidden =
+      !connection.has_deepgram_key;
+    document.querySelector("[data-reveal-key='external_tts_api_key']").hidden =
+      !connection.has_external_key;
     updateEngineFields();
   } catch (error) {
     addLog("error", `Verbindungsdaten nicht ladbar: ${error.message}`);
@@ -445,6 +453,31 @@ async function loadConnection() {
 }
 
 connectionForm.elements.tts_engine.addEventListener("change", updateEngineFields);
+
+for (const button of document.querySelectorAll(".key-reveal")) {
+  button.addEventListener("click", async () => {
+    const input = document.getElementById(button.dataset.target);
+    if (input.type === "text") {
+      input.type = "password";
+      input.value = "";
+      button.textContent = "Gespeicherten Schlüssel anzeigen";
+      return;
+    }
+    try {
+      const keys = await api("/connection/keys");
+      const value = keys[button.dataset.revealKey];
+      if (!value) {
+        addLog("system", "Kein gespeicherter Schlüssel vorhanden");
+        return;
+      }
+      input.type = "text";
+      input.value = value;
+      button.textContent = "Wieder verbergen";
+    } catch (error) {
+      addLog("error", `Schlüssel nicht abrufbar: ${error.message}`);
+    }
+  });
+}
 
 connectionForm.addEventListener("submit", async (event) => {
   event.preventDefault();

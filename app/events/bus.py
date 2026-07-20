@@ -18,7 +18,15 @@ class BlockedBroadcast:
         }
 
 
-BusEvent = Event | BlockedBroadcast
+@dataclass(frozen=True, slots=True)
+class SystemNotice:
+    text: str
+
+    def json_payload(self) -> dict[str, Any]:
+        return {"type": "system", "text": self.text}
+
+
+BusEvent = Event | BlockedBroadcast | SystemNotice
 
 
 class EventBus:
@@ -55,6 +63,17 @@ class EventBus:
                 if include_blocked
             )
         self._broadcast(subscribers, broadcast)
+
+    async def publish_system(self, text: str) -> None:
+        # Nur an UI-Abonnenten (include_blocked), nicht in die TTS-Pipeline.
+        notice = SystemNotice(text=text)
+        async with self._lock:
+            subscribers = tuple(
+                queue
+                for queue, include_blocked in self._subscribers.items()
+                if include_blocked
+            )
+        self._broadcast(subscribers, notice)
 
     @staticmethod
     def _broadcast(

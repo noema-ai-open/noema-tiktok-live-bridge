@@ -10,7 +10,7 @@ from pathlib import Path
 
 import httpx
 
-from app.tts.base import TTSEngine, VoiceInfo
+from app.tts.base import TTSEngine, TTSError, VoiceInfo
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +48,9 @@ class ExternalTTSEngine(TTSEngine):
         device: str | None,
     ) -> None:
         if not self.is_available():
-            logger.error("External TTS is unavailable: API key or base URL is missing")
-            return
+            raise TTSError(
+                "Externe TTS nicht einsatzbereit: API-Schlüssel oder Basisadresse fehlt"
+            )
 
         # Do not add usernames, device details, or any other user data here. The
         # provider receives only the model, selected voice, and text to speak.
@@ -70,23 +71,34 @@ class ExternalTTSEngine(TTSEngine):
                 response.raise_for_status()
         except asyncio.CancelledError:
             raise
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code
+            hint = ""
+            if status == 404:
+                hint = " — Anbieter kennt /audio/speech nicht (kein TTS-Anbieter?)"
+            elif status in (401, 403):
+                hint = " — API-Schlüssel ungültig oder ohne Berechtigung"
+            raise TTSError(
+                f"Externe TTS: HTTP {status} von {self.base_url}/audio/speech{hint}"
+            ) from exc
         except httpx.HTTPError as exc:
-            logger.error("External TTS request failed (%s)", type(exc).__name__)
-            return
-        except Exception:
+            raise TTSError(
+                f"Externe TTS nicht erreichbar ({type(exc).__name__}): {self.base_url}"
+            ) from exc
+        except Exception as exc:
             logger.exception("External TTS client failed unexpectedly")
-            return
+            raise TTSError("Externe TTS: unerwarteter Fehler (siehe Log)") from exc
 
         if not response.content:
-            logger.error("External TTS returned empty audio")
-            return
+            raise TTSError("Externe TTS: Anbieter lieferte leeres Audio")
         content_type = response.headers.get("content-type", "").partition(";")[0].lower()
         try:
             await self._play(response.content, content_type)
-        except asyncio.CancelledError:
+        except (asyncio.CancelledError, TTSError):
             raise
-        except Exception:
+        except Exception as exc:
             logger.exception("External TTS audio playback failed")
+            raise TTSError("Externe TTS: Wiedergabe fehlgeschlagen (siehe Log)") from exc
 
     @staticmethod
     def _is_wav(audio: bytes, content_type: str) -> bool:
@@ -120,8 +132,9 @@ class ExternalTTSEngine(TTSEngine):
             elif self.player_command:
                 await self._play_with_command(path)
             else:
-                logger.error(
-                    "External TTS audio cannot be played: no player command configured"
+                raise TTSError(
+                    "Externe TTS: Audio erhalten, aber kein Abspielweg "
+                    f"({content_type or 'unbekanntes Format'}, kein Player konfiguriert)"
                 )
         finally:
             if path is not None:

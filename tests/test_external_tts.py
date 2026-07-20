@@ -5,6 +5,7 @@ import pytest
 
 from app.config import AppConfig
 from app.service import BridgeService
+from app.tts.base import TTSError
 from app.tts.external import ExternalTTSEngine
 
 
@@ -74,12 +75,13 @@ async def test_external_tts_is_unavailable_without_key_and_never_calls_network(
 
     assert engine.is_available() is False
     assert engine.list_voices() == []
-    await engine.speak("text", None, 0, 100, None)
+    with pytest.raises(TTSError):
+        await engine.speak("text", None, 0, 100, None)
     assert called is False
 
 
 @pytest.mark.asyncio
-async def test_external_tts_swallows_network_errors(monkeypatch, caplog) -> None:
+async def test_external_tts_raises_tts_error_on_network_errors(monkeypatch, caplog) -> None:
     class BrokenClient:
         async def __aenter__(self) -> "BrokenClient":
             return self
@@ -98,9 +100,10 @@ async def test_external_tts_swallows_network_errors(monkeypatch, caplog) -> None
         api_key="secret", base_url="https://tts.example", model="m"
     )
 
-    await engine.speak("text", None, 0, 100, None)
+    with pytest.raises(TTSError) as excinfo:
+        await engine.speak("text", None, 0, 100, None)
 
-    assert "External TTS request failed" in caplog.text
+    assert "nicht erreichbar" in str(excinfo.value)
 
 
 def test_service_selects_external_engine_from_config() -> None:

@@ -2,6 +2,10 @@ from abc import ABC, abstractmethod
 from typing import TypedDict
 
 
+class TTSError(Exception):
+    """Speak failed for a reason the user can act on; message is shown in the UI log."""
+
+
 class VoiceInfo(TypedDict):
     id: str
     name: str
