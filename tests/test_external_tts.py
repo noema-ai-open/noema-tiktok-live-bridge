@@ -54,7 +54,7 @@ async def test_external_tts_posts_only_required_fields_and_plays_audio(monkeypat
         "model": "voice-model",
         "voice": "coral",
         "input": "Only this text",
-        "response_format": "wav",
+        "response_format": "pcm",
     }
     assert played == {"audio": b"RIFFxxxxWAVEaudio", "content_type": "audio/wav"}
 
@@ -121,3 +121,51 @@ def test_service_selects_external_engine_from_config() -> None:
     assert engine.is_available() is True
     assert engine.model == "custom-model"
     assert engine.player_command == "player {file}"
+
+
+@pytest.mark.asyncio
+async def test_external_tts_wraps_openrouter_pcm_into_wav(monkeypatch) -> None:
+    pcm = b"\x00\x01" * 2400
+
+    class FakeClient:
+        def __init__(self, **kwargs: object) -> None:
+            pass
+
+        async def __aenter__(self) -> "FakeClient":
+            return self
+
+        async def __aexit__(self, *args: object) -> None:
+            return None
+
+        async def post(self, url: str, **kwargs: object) -> httpx.Response:
+            return httpx.Response(
+                200,
+                content=pcm,
+                headers={"content-type": "audio/pcm;rate=24000;channels=1"},
+                request=httpx.Request("POST", url),
+            )
+
+    monkeypatch.setattr("app.tts.external.httpx.AsyncClient", FakeClient)
+    engine = ExternalTTSEngine(
+        api_key="secret", base_url="https://tts.example", model="m"
+    )
+    played: dict[str, object] = {}
+
+    async def fake_play(audio: bytes, content_type: str) -> None:
+        played.update(audio=audio, content_type=content_type)
+
+    monkeypatch.setattr(engine, "_play", fake_play)
+    await engine.speak("text", None, 0, 100, None)
+
+    audio = played["audio"]
+    assert played["content_type"] == "audio/wav"
+    assert audio[:4] == b"RIFF" and audio[8:12] == b"WAVE"
+    assert audio.endswith(pcm)
+
+    import io
+    import wave
+
+    with wave.open(io.BytesIO(audio)) as wav:
+        assert wav.getframerate() == 24000
+        assert wav.getnchannels() == 1
+        assert wav.getsampwidth() == 2

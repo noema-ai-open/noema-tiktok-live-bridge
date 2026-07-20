@@ -54,12 +54,13 @@ class ExternalTTSEngine(TTSEngine):
 
         # Do not add usernames, device details, or any other user data here. The
         # provider receives only the model, selected voice, and text to speak.
-        # WAV anfordern: unter Windows ist nur WAV ohne Zusatzplayer abspielbar.
+        # PCM anfordern: können OpenAI UND OpenRouter (die kein "wav" kennen);
+        # wird unten selbst in WAV verpackt, das Windows ohne Player abspielt.
         payload = {
             "model": self.model,
             "voice": voice or "alloy",
             "input": text,
-            "response_format": "wav",
+            "response_format": "pcm",
         }
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
@@ -91,14 +92,46 @@ class ExternalTTSEngine(TTSEngine):
 
         if not response.content:
             raise TTSError("Externe TTS: Anbieter lieferte leeres Audio")
-        content_type = response.headers.get("content-type", "").partition(";")[0].lower()
+        raw_content_type = response.headers.get("content-type", "")
+        content_type = raw_content_type.partition(";")[0].strip().lower()
+        audio = response.content
+        if content_type == "audio/pcm" or (
+            not self._is_wav(audio, content_type) and content_type in ("", "audio/l16")
+        ):
+            audio = self._pcm_to_wav(audio, raw_content_type)
+            content_type = "audio/wav"
         try:
-            await self._play(response.content, content_type)
+            await self._play(audio, content_type)
         except (asyncio.CancelledError, TTSError):
             raise
         except Exception as exc:
             logger.exception("External TTS audio playback failed")
             raise TTSError("Externe TTS: Wiedergabe fehlgeschlagen (siehe Log)") from exc
+
+    @staticmethod
+    def _pcm_to_wav(pcm: bytes, content_type: str) -> bytes:
+        """Rohes 16-Bit-PCM in einen WAV-Container packen.
+
+        Abtastrate/Kanäle stehen bei OpenRouter im Content-Type
+        (audio/pcm;rate=24000;channels=1); OpenAI-PCM ist ebenfalls 24 kHz mono.
+        """
+        rate, channels = 24000, 1
+        for part in content_type.split(";")[1:]:
+            name, _, value = part.strip().partition("=")
+            if name == "rate" and value.isdigit():
+                rate = int(value)
+            elif name == "channels" and value.isdigit():
+                channels = int(value)
+        import io
+        import wave
+
+        buffer = io.BytesIO()
+        with wave.open(buffer, "wb") as wav:
+            wav.setnchannels(channels)
+            wav.setsampwidth(2)
+            wav.setframerate(rate)
+            wav.writeframes(pcm)
+        return buffer.getvalue()
 
     @staticmethod
     def _is_wav(audio: bytes, content_type: str) -> bool:
