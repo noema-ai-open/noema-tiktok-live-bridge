@@ -5,7 +5,7 @@ import logging
 
 import httpx
 
-from app.tts.base import VoiceInfo
+from app.tts.base import TTSError, VoiceInfo
 from app.tts.external import ExternalTTSEngine
 
 logger = logging.getLogger(__name__)
@@ -54,8 +54,7 @@ class DeepgramTTSEngine(ExternalTTSEngine):
         device: str | None,
     ) -> None:
         if not self.is_available():
-            logger.error("Deepgram TTS is unavailable: API key is missing")
-            return
+            raise TTSError("Deepgram-TTS nicht einsatzbereit: API-Schlüssel fehlt")
         params = {
             "model": voice or KNOWN_VOICES[0],
             "encoding": "linear16",
@@ -72,21 +71,30 @@ class DeepgramTTSEngine(ExternalTTSEngine):
                 response.raise_for_status()
         except asyncio.CancelledError:
             raise
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code
+            hint = ""
+            if status in (401, 403):
+                hint = " — API-Schlüssel ungültig oder ohne Berechtigung"
+            elif status == 400:
+                hint = " — Stimme/Modellkennung prüfen (z. B. aura-2-thalia-en)"
+            raise TTSError(f"Deepgram-TTS: HTTP {status}{hint}") from exc
         except httpx.HTTPError as exc:
-            logger.error("Deepgram TTS request failed (%s)", type(exc).__name__)
-            return
-        except Exception:
+            raise TTSError(
+                f"Deepgram-TTS nicht erreichbar ({type(exc).__name__})"
+            ) from exc
+        except Exception as exc:
             logger.exception("Deepgram TTS client failed unexpectedly")
-            return
+            raise TTSError("Deepgram-TTS: unerwarteter Fehler (siehe Log)") from exc
 
         if not response.content:
-            logger.error("Deepgram TTS returned empty audio")
-            return
+            raise TTSError("Deepgram-TTS: Anbieter lieferte leeres Audio")
         content_type = response.headers.get("content-type", "audio/wav")
         content_type = content_type.partition(";")[0].lower()
         try:
             await self._play(response.content, content_type)
-        except asyncio.CancelledError:
+        except (asyncio.CancelledError, TTSError):
             raise
-        except Exception:
+        except Exception as exc:
             logger.exception("Deepgram TTS audio playback failed")
+            raise TTSError("Deepgram-TTS: Wiedergabe fehlgeschlagen (siehe Log)") from exc
