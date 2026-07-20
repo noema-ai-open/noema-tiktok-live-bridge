@@ -177,6 +177,7 @@ async def test_tts_api_test_stop_voices_and_disabled_conflict(tmp_path) -> None:
     async with app.router.lifespan_context(app):
         transport = httpx.ASGITransport(app=app)
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            await client.post("/settings", json={"tts_enabled": False})
             disabled = await client.post("/tts/test", json={"text": "hello"})
             assert disabled.status_code == 409
 

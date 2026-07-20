@@ -18,7 +18,7 @@ class RuntimeSettings(BaseModel):
     spam_max_repetitions: int = Field(default=2, ge=1, le=100)
     spam_window_seconds: float = Field(default=30.0, gt=0, le=3600)
     user_cooldown_seconds: float = Field(default=0.0, ge=0, le=3600)
-    tts_enabled: bool = False
+    tts_enabled: bool = True
     read_username: bool = False
     tts_max_length: int = Field(default=300, ge=1, le=10_000)
     tts_user_cooldown_seconds: float = Field(default=0.0, ge=0, le=3600)

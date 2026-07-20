@@ -364,6 +364,31 @@ elements.ttsVolume.addEventListener("input", () => {
   elements.volumeOutput.textContent = `${elements.ttsVolume.value} %`;
 });
 
+// Ein Schalter muss sofort wirken, ohne dass man weiter unten extra
+// "Speichern" klickt — sonst wirkt er ausgeschaltet, obwohl er "an" zeigt.
+elements.ttsEnabled.addEventListener("change", async () => {
+  const enabled = elements.ttsEnabled.checked;
+  elements.ttsEnabled.disabled = true;
+  setMessage(elements.settingsMessage, enabled ? "Wird aktiviert …" : "Wird deaktiviert …");
+  try {
+    await api("/settings", {
+      method: "POST",
+      body: JSON.stringify({ tts_enabled: enabled }),
+    });
+    setMessage(
+      elements.settingsMessage,
+      enabled ? "Text-to-Speech ist an" : "Text-to-Speech ist aus",
+      "success",
+    );
+    addLog("system", enabled ? "Text-to-Speech aktiviert" : "Text-to-Speech deaktiviert");
+  } catch (error) {
+    elements.ttsEnabled.checked = !enabled;
+    setMessage(elements.settingsMessage, `Fehlgeschlagen: ${error.message}`, "error");
+  } finally {
+    elements.ttsEnabled.disabled = false;
+  }
+});
+
 elements.audioForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const button = elements.audioForm.querySelector("button[type='submit']");
