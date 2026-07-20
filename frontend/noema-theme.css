@@ -211,8 +211,8 @@ textarea:focus-visible {
   font-size: 0.78rem;
 }
 
-.emergency-panel {
-  border-color: rgba(190, 94, 94, 0.30);
+.tts-subsection--danger {
+  border-top-color: rgba(190, 94, 94, 0.30);
   background: linear-gradient(180deg, rgba(70, 25, 29, 0.42), rgba(40, 18, 21, 0.42));
 }
 

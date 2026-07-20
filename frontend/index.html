@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="dark">
-    <title>NOEMA Live Bridge v0.1.16</title>
+    <title>NOEMA Live Bridge v0.1.17</title>
     <link rel="icon" type="image/svg+xml" href="/noema-logo.svg">
     <link rel="stylesheet" href="/style.css">
     <link rel="stylesheet" href="/noema-theme.css">
@@ -18,7 +18,7 @@
           <img class="brand-word" src="/noema-wordmark.png" alt="NOEMA">
           <div class="title-line">
             <h1>TikTok Live Bridge</h1>
-            <span class="version-chip" id="app-version">v0.1.16</span>
+            <span class="version-chip" id="app-version">v0.1.17</span>
           </div>
           <p class="eyebrow eyebrow--sub">LOKALE STEUERUNG</p>
         </div>
@@ -135,13 +135,32 @@
           </form>
         </section>
 
-        <section class="panel emergency-panel">
-          <div>
-            <p class="section-kicker">SOFORTAKTION</p>
-            <h2>Sprachausgabe stoppen</h2>
+        <section class="panel settings-panel" aria-labelledby="audio-title">
+          <div class="panel-heading">
+            <div>
+              <p class="section-kicker">AUSGABE</p>
+              <h2 id="audio-title">Audiogerät</h2>
+            </div>
           </div>
-          <button class="danger-button" id="stop-tts" type="button">NOT-AUS</button>
-          <p class="action-message" id="stop-message" role="status"></p>
+          <form id="audio-form">
+            <div class="form-grid">
+              <div class="field field--wide">
+                <label for="tts-device">Ausgabegerät</label>
+                <select id="tts-device" name="tts_device"></select>
+              </div>
+              <div class="field field--wide">
+                <div class="field-label-line">
+                  <label for="tts-volume">Lautstärke</label>
+                  <output id="volume-output" for="tts-volume">100 %</output>
+                </div>
+                <input id="tts-volume" name="tts_volume" type="range" min="0" max="100" step="1" value="100">
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="primary-button" type="submit">Audiogerät speichern</button>
+              <p class="action-message" id="audio-message" role="status"></p>
+            </div>
+          </form>
         </section>
 
         <section class="panel settings-panel" aria-labelledby="settings-title">
@@ -166,17 +185,6 @@
             </div>
 
             <div class="form-grid">
-              <div class="field field--wide">
-                <label for="tts-device">Audiogerät</label>
-                <select id="tts-device" name="tts_device"></select>
-              </div>
-              <div class="field field--wide">
-                <div class="field-label-line">
-                  <label for="tts-volume">Lautstärke</label>
-                  <output id="volume-output" for="tts-volume">100 %</output>
-                </div>
-                <input id="tts-volume" name="tts_volume" type="range" min="0" max="100" step="1" value="100">
-              </div>
               <div class="field">
                 <label for="tts-cooldown">Cooldown je Nutzer</label>
                 <div class="input-unit">
@@ -215,17 +223,22 @@
               <p class="action-message" id="settings-message" role="status"></p>
             </div>
           </form>
-        </section>
 
-        <section class="panel test-panel" aria-labelledby="test-title">
-          <p class="section-kicker">AUSGABE PRÜFEN</p>
-          <h2 id="test-title">Testnachricht</h2>
-          <form id="tts-test-form" class="inline-form">
-            <label class="visually-hidden" for="tts-test-text">Text der Testnachricht</label>
-            <input id="tts-test-text" type="text" maxlength="10000" placeholder="Text zum Vorlesen" required>
-            <button class="secondary-button" type="submit">Abspielen</button>
-          </form>
-          <p class="action-message" id="test-message" role="status"></p>
+          <div class="tts-subsection">
+            <p class="section-kicker">AUSGABE PRÜFEN</p>
+            <form id="tts-test-form" class="inline-form">
+              <label class="visually-hidden" for="tts-test-text">Text der Testnachricht</label>
+              <input id="tts-test-text" type="text" maxlength="10000" placeholder="Text zum Vorlesen" required>
+              <button class="secondary-button" type="submit">Abspielen</button>
+            </form>
+            <p class="action-message" id="test-message" role="status"></p>
+          </div>
+
+          <div class="tts-subsection tts-subsection--danger">
+            <p class="section-kicker">SOFORTAKTION</p>
+            <button class="danger-button" id="stop-tts" type="button">NOT-AUS</button>
+            <p class="action-message" id="stop-message" role="status"></p>
+          </div>
         </section>
       </aside>
 

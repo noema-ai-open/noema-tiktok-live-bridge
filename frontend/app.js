@@ -14,6 +14,8 @@ const elements = {
   chatEmpty: document.querySelector("#chat-empty"),
   logList: document.querySelector("#log-list"),
   logCount: document.querySelector("#log-count"),
+  audioForm: document.querySelector("#audio-form"),
+  audioMessage: document.querySelector("#audio-message"),
   settingsForm: document.querySelector("#settings-form"),
   settingsMessage: document.querySelector("#settings-message"),
   ttsEnabled: document.querySelector("#tts-enabled"),
@@ -124,13 +126,18 @@ function linesFrom(text) {
 function collectSettings() {
   return {
     tts_enabled: elements.ttsEnabled.checked,
-    tts_device: elements.ttsDevice.value || null,
-    tts_volume: Number.parseInt(elements.ttsVolume.value, 10),
     tts_user_cooldown_seconds: Number.parseFloat(elements.ttsCooldown.value),
     tts_max_length: Number.parseInt(elements.ttsMaxLength.value, 10),
     blacklist_words: linesFrom(elements.blacklist.value),
     whitelist_words: linesFrom(elements.whitelist.value),
     retention: elements.retention.value,
+  };
+}
+
+function collectAudioSettings() {
+  return {
+    tts_device: elements.ttsDevice.value || null,
+    tts_volume: Number.parseInt(elements.ttsVolume.value, 10),
   };
 }
 
@@ -355,6 +362,27 @@ function connectWebSocket() {
 
 elements.ttsVolume.addEventListener("input", () => {
   elements.volumeOutput.textContent = `${elements.ttsVolume.value} %`;
+});
+
+elements.audioForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = elements.audioForm.querySelector("button[type='submit']");
+  button.disabled = true;
+  setMessage(elements.audioMessage, "Wird gespeichert …");
+  try {
+    const settings = await api("/settings", {
+      method: "POST",
+      body: JSON.stringify(collectAudioSettings()),
+    });
+    applySettings(settings);
+    setMessage(elements.audioMessage, "Gespeichert", "success");
+    addLog("system", "Audiogerät aktualisiert");
+  } catch (error) {
+    setMessage(elements.audioMessage, `Speichern fehlgeschlagen: ${error.message}`, "error");
+    addLog("error", `Audiogerät konnte nicht gespeichert werden: ${error.message}`);
+  } finally {
+    button.disabled = false;
+  }
 });
 
 elements.settingsForm.addEventListener("submit", async (event) => {

@@ -316,17 +316,7 @@ h2 {
   align-content: start;
 }
 
-.emergency-panel {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 16px;
-  align-items: center;
-  padding: 18px 20px;
-  border-color: #5a292c;
-  background: var(--danger-dark);
-}
-
-.emergency-panel .section-kicker {
+.tts-subsection--danger .section-kicker {
   color: #fa8b8b;
 }
 
@@ -354,10 +344,6 @@ h2 {
 
 .danger-button:active {
   background: #a92328;
-}
-
-.emergency-panel .action-message {
-  grid-column: 1 / -1;
 }
 
 .settings-panel form {
@@ -565,22 +551,36 @@ button:disabled {
   color: #ff8686;
 }
 
-.test-panel {
-  padding: 18px 20px;
-}
-
-.test-panel h2 {
-  margin-bottom: 13px;
-}
-
 .inline-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
 }
 
-.test-panel .action-message {
+.tts-subsection {
+  padding: 17px 20px;
+  border-top: 1px solid var(--line);
+}
+
+.tts-subsection .action-message {
   margin-top: 8px;
+}
+
+.tts-subsection--danger {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: center;
+  background: var(--danger-dark);
+}
+
+.tts-subsection--danger .section-kicker {
+  grid-column: 1 / -1;
+}
+
+.tts-subsection--danger .action-message {
+  grid-column: 1 / -1;
+  margin-top: 0;
 }
 
 .log-panel {
@@ -682,7 +682,7 @@ button:disabled {
     grid-column: 2 / -1;
   }
 
-  .emergency-panel {
+  .tts-subsection--danger {
     grid-template-columns: 1fr;
   }
 
