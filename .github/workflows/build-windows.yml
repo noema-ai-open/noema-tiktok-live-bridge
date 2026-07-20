@@ -41,6 +41,12 @@ jobs:
           --collect-all TikTokLive
           --collect-all edge_tts
           --collect-all miniaudio
+          --collect-all aiohttp
+          --collect-all multidict
+          --collect-all yarl
+          --collect-all frozenlist
+          --collect-all aiosignal
+          --collect-all certifi
           --hidden-import win32com.client
           scripts/windows_launcher.py
 

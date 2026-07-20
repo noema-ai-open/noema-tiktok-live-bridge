@@ -68,6 +68,14 @@ async def tts_voices(request: Request) -> list[dict[str, str]]:
     return _service(request).tts_engine.list_voices()
 
 
+@router.get("/tts/sapi-voices")
+async def sapi_voices() -> list[dict[str, str]]:
+    """Installierte Windows-Stimmen, unabhängig vom aktuell aktiven Anbieter."""
+    from app.tts.sapi import SAPIEngine
+
+    return SAPIEngine().list_voices()
+
+
 @router.get("/tts/edge-voices")
 async def edge_voices() -> list[dict[str, str]]:
     """Alle Microsoft-Edge-Stimmen, unabhängig vom aktuell aktiven Anbieter."""

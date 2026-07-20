@@ -17,7 +17,6 @@ const elements = {
   settingsForm: document.querySelector("#settings-form"),
   settingsMessage: document.querySelector("#settings-message"),
   ttsEnabled: document.querySelector("#tts-enabled"),
-  ttsVoice: document.querySelector("#tts-voice"),
   ttsDevice: document.querySelector("#tts-device"),
   ttsVolume: document.querySelector("#tts-volume"),
   volumeOutput: document.querySelector("#volume-output"),
@@ -125,7 +124,6 @@ function linesFrom(text) {
 function collectSettings() {
   return {
     tts_enabled: elements.ttsEnabled.checked,
-    tts_voice: elements.ttsVoice.value || null,
     tts_device: elements.ttsDevice.value || null,
     tts_volume: Number.parseInt(elements.ttsVolume.value, 10),
     tts_user_cooldown_seconds: Number.parseFloat(elements.ttsCooldown.value),
@@ -138,13 +136,11 @@ function collectSettings() {
 
 async function loadConfiguration() {
   try {
-    const [settings, voices, devices] = await Promise.all([
+    const [settings, devices] = await Promise.all([
       api("/settings"),
-      api("/tts/voices"),
       api("/audio/devices"),
     ]);
     applySettings(settings);
-    setOptions(elements.ttsVoice, voices, "Systemstimme", settings.tts_voice);
     setOptions(elements.ttsDevice, devices, "Standardausgabe", settings.tts_device);
   } catch (error) {
     setMessage(elements.settingsMessage, `Laden fehlgeschlagen: ${error.message}`, "error");
@@ -442,6 +438,30 @@ async function ensureEdgeVoicesLoaded() {
   }
 }
 
+let sapiVoicesLoaded = false;
+
+async function ensureSapiVoicesLoaded(selectedValue) {
+  const hint = document.querySelector("#sapi-voice-hint");
+  const select = document.querySelector("#conn-sapi-voice");
+  if (sapiVoicesLoaded) {
+    if (selectedValue) {
+      select.value = selectedValue;
+    }
+    return;
+  }
+  hint.textContent = "Stimmenliste wird geladen …";
+  try {
+    const voices = await api("/tts/sapi-voices");
+    setOptions(select, voices, "Systemstandard", selectedValue);
+    sapiVoicesLoaded = true;
+    hint.textContent = voices.length
+      ? `${voices.length} installierte Windows-Stimmen`
+      : "Keine Windows-Stimmen gefunden";
+  } catch (error) {
+    hint.textContent = `Stimmenliste nicht ladbar: ${error.message}`;
+  }
+}
+
 function updateEngineFields() {
   const engine = connectionForm.elements.tts_engine.value;
   for (const field of connectionForm.querySelectorAll("[data-engine-only]")) {
@@ -450,6 +470,9 @@ function updateEngineFields() {
   }
   if (engine === "edge") {
     ensureEdgeVoicesLoaded();
+  }
+  if (engine === "sapi") {
+    ensureSapiVoicesLoaded();
   }
 }
 
@@ -478,6 +501,9 @@ async function loadConnection() {
     updateEngineFields();
     if (connection.tts_engine === "edge") {
       ensureEdgeVoicesLoaded();
+    }
+    if (connection.tts_engine === "sapi") {
+      ensureSapiVoicesLoaded(connection.tts_voice || "");
     }
   } catch (error) {
     addLog("error", `Verbindungsdaten nicht ladbar: ${error.message}`);
@@ -538,10 +564,13 @@ connectionForm.addEventListener("submit", async (event) => {
     if (model) {
       body.external_tts_model = model;
     }
-    const voice =
-      body.tts_engine === "edge"
-        ? connectionForm.elements.tts_voice_edge.value.trim()
-        : connectionForm.elements.tts_voice.value.trim();
+    const voiceByEngine = {
+      edge: connectionForm.elements.tts_voice_edge.value.trim(),
+      sapi: connectionForm.elements.tts_voice_sapi.value.trim(),
+      external: connectionForm.elements.tts_voice.value.trim(),
+      deepgram: connectionForm.elements.tts_voice.value.trim(),
+    };
+    const voice = voiceByEngine[body.tts_engine] || "";
     if (voice) {
       body.tts_voice = voice;
     }
