@@ -7,6 +7,7 @@
 
 [![Latest Release](https://img.shields.io/github/v/release/noema-ai-open/noema-tiktok-live-bridge?display_name=tag&sort=semver)](https://github.com/noema-ai-open/noema-tiktok-live-bridge/releases/latest)
 [![Windows Installer](https://img.shields.io/badge/Windows-Setup-0078D4?logo=windows)](https://github.com/noema-ai-open/noema-tiktok-live-bridge/releases/latest/download/NOEMA-TikTok-Bridge-Setup.exe)
+[![Spenden](https://img.shields.io/badge/PayPal-Spenden-f4b23a?logo=paypal)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=swoellner.pay@gmx.de&currency_code=EUR&item_name=NOEMA+TikTok+Live+Bridge)
 
 > **Hinweis / Disclaimer:** Community-Projekt ohne jede Garantie. Die TikTok-Anbindung nutzt eine inoffizielle Bibliothek und kann jederzeit brechen — Details in [TIKTOK_CONNECTOR_LIMITATIONS.md](TIKTOK_CONNECTOR_LIMITATIONS.md). Kein offizielles TikTok-Produkt.
 
