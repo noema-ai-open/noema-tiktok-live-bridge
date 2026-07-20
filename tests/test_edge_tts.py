@@ -88,3 +88,43 @@ def test_service_selects_edge_engine_from_config() -> None:
     config = AppConfig(tts_engine="edge")
     engine = BridgeService._build_tts_engine("edge", config)
     assert isinstance(engine, EdgeTTSEngine)
+
+
+@pytest.mark.asyncio
+async def test_fetch_all_voices_sorts_german_first(monkeypatch) -> None:
+    from app.tts import edge as edge_module
+
+    edge_module._voice_cache = None
+    module = types.ModuleType("edge_tts")
+
+    async def list_voices():
+        return [
+            {"ShortName": "en-US-GuyNeural", "Locale": "en-US", "FriendlyName": "Guy"},
+            {"ShortName": "de-DE-KatjaNeural", "Locale": "de-DE", "FriendlyName": "Katja"},
+        ]
+
+    module.list_voices = list_voices
+    monkeypatch.setitem(sys.modules, "edge_tts", module)
+
+    voices = await edge_module.fetch_all_voices()
+    assert voices[0]["id"] == "de-DE-KatjaNeural"
+    assert voices[1]["id"] == "en-US-GuyNeural"
+    edge_module._voice_cache = None
+
+
+@pytest.mark.asyncio
+async def test_fetch_all_voices_falls_back_on_error(monkeypatch) -> None:
+    from app.tts import edge as edge_module
+
+    edge_module._voice_cache = None
+    module = types.ModuleType("edge_tts")
+
+    async def list_voices():
+        raise RuntimeError("no network")
+
+    module.list_voices = list_voices
+    monkeypatch.setitem(sys.modules, "edge_tts", module)
+
+    voices = await edge_module.fetch_all_voices()
+    assert voices == [{"id": v, "name": v} for v in edge_module.KNOWN_VOICES]
+    edge_module._voice_cache = None

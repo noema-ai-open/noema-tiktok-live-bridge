@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="dark">
-    <title>NOEMA Live Bridge v0.1.13</title>
+    <title>NOEMA Live Bridge v0.1.14</title>
     <link rel="icon" type="image/svg+xml" href="/noema-logo.svg">
     <link rel="stylesheet" href="/style.css">
     <link rel="stylesheet" href="/noema-theme.css">
@@ -18,7 +18,7 @@
           <img class="brand-word" src="/noema-wordmark.png" alt="NOEMA">
           <div class="title-line">
             <h1>TikTok Live Bridge</h1>
-            <span class="version-chip" id="app-version">v0.1.13</span>
+            <span class="version-chip" id="app-version">v0.1.14</span>
           </div>
           <p class="eyebrow eyebrow--sub">LOKALE STEUERUNG</p>
         </div>
@@ -112,9 +112,15 @@
                 <p class="key-hint" id="external-hint"></p>
                 <button class="ghost-button key-reveal" type="button" data-reveal-key="external_tts_api_key" data-target="conn-ext-key" hidden>Gespeicherten Schlüssel anzeigen</button>
               </div>
-              <div class="field field--wide" data-engine-only="external deepgram edge">
+              <div class="field field--wide" data-engine-only="external deepgram">
                 <label for="conn-voice">Stimme (frei eintragen)</label>
-                <input id="conn-voice" name="tts_voice" type="text" maxlength="200" autocomplete="off" placeholder="z. B. alloy, aura-2-thalia-en oder de-DE-KatjaNeural">
+                <input id="conn-voice" name="tts_voice" type="text" maxlength="200" autocomplete="off" placeholder="z. B. alloy oder aura-2-thalia-en">
+              </div>
+              <div class="field field--wide" data-engine-only="edge">
+                <label for="conn-edge-voice">Stimme (Microsoft Edge)</label>
+                <input id="conn-edge-voice" name="tts_voice_edge" type="text" list="edge-voice-list" maxlength="200" autocomplete="off" placeholder="Tippen zum Suchen, z. B. Katja, Conrad, italienisch …">
+                <datalist id="edge-voice-list"></datalist>
+                <p class="key-hint" id="edge-voice-hint"></p>
               </div>
             </div>
             <div class="form-actions">

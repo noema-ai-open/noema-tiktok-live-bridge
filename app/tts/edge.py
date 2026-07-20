@@ -7,8 +7,8 @@ from app.tts.external import ExternalTTSEngine
 
 logger = logging.getLogger(__name__)
 
-# Auswahl gängiger Edge-Neural-Stimmen; das Feld ist Freitext, jede gültige
-# Kennung aus `edge-tts --list-voices` funktioniert (über 300 Stimmen).
+# Kuratierte Auswahl als Rückfallebene, falls die Live-Abfrage aller
+# Microsoft-Stimmen (siehe fetch_all_voices) fehlschlägt (z. B. kein Netz).
 KNOWN_VOICES = [
     "de-DE-KatjaNeural",
     "de-DE-SeraphinaMultilingualNeural",
@@ -25,6 +25,41 @@ KNOWN_VOICES = [
 ]
 
 DEFAULT_VOICE = KNOWN_VOICES[0]
+
+_voice_cache: list[VoiceInfo] | None = None
+
+
+async def fetch_all_voices() -> list[VoiceInfo]:
+    """Alle Microsoft-Edge-Stimmen live abfragen (über 300, alle Sprachen).
+
+    Ergebnis wird für die Laufzeit der App zwischengespeichert, damit nicht
+    jeder Dropdown-Aufruf im Frontend eine neue Netzabfrage auslöst.
+    """
+    global _voice_cache
+    if _voice_cache is not None:
+        return _voice_cache
+    try:
+        import edge_tts
+
+        raw_voices = await edge_tts.list_voices()
+    except Exception:
+        logger.exception("Could not fetch Edge voice list, using curated fallback")
+        return [{"id": voice, "name": voice} for voice in KNOWN_VOICES]
+
+    def sort_key(voice: dict) -> tuple[int, str]:
+        locale = voice.get("Locale", "")
+        return (0 if locale.startswith("de") else 1, locale)
+
+    voices: list[VoiceInfo] = [
+        {
+            "id": voice["ShortName"],
+            "name": f"{voice['ShortName']} — {voice.get('FriendlyName', voice['ShortName'])}",
+        }
+        for voice in sorted(raw_voices, key=sort_key)
+        if voice.get("ShortName")
+    ]
+    _voice_cache = voices
+    return voices
 
 
 class EdgeTTSEngine(ExternalTTSEngine):

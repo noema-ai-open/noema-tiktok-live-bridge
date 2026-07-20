@@ -417,11 +417,39 @@ elements.stopButton.addEventListener("click", async () => {
 const connectionForm = document.querySelector("#connection-form");
 const connectionMessage = document.querySelector("#connection-message");
 
+let edgeVoicesLoaded = false;
+
+async function ensureEdgeVoicesLoaded() {
+  if (edgeVoicesLoaded) {
+    return;
+  }
+  const hint = document.querySelector("#edge-voice-hint");
+  hint.textContent = "Stimmenliste wird geladen …";
+  try {
+    const voices = await api("/tts/edge-voices");
+    const list = document.querySelector("#edge-voice-list");
+    list.innerHTML = "";
+    for (const voice of voices) {
+      const option = document.createElement("option");
+      option.value = voice.id;
+      option.label = voice.name;
+      list.appendChild(option);
+    }
+    edgeVoicesLoaded = true;
+    hint.textContent = `${voices.length} Stimmen verfügbar — Deutsch zuerst`;
+  } catch (error) {
+    hint.textContent = `Stimmenliste nicht ladbar: ${error.message}`;
+  }
+}
+
 function updateEngineFields() {
   const engine = connectionForm.elements.tts_engine.value;
   for (const field of connectionForm.querySelectorAll("[data-engine-only]")) {
     const engines = field.dataset.engineOnly.split(" ");
     field.hidden = !engines.includes(engine);
+  }
+  if (engine === "edge") {
+    ensureEdgeVoicesLoaded();
   }
 }
 
@@ -436,6 +464,7 @@ async function loadConnection() {
     connectionForm.elements.external_tts_model.value =
       connection.external_tts_model || "";
     connectionForm.elements.tts_voice.value = connection.tts_voice || "";
+    connectionForm.elements.tts_voice_edge.value = connection.tts_voice || "";
     document.querySelector("#deepgram-hint").textContent = connection.has_deepgram_key
       ? "Schlüssel ist hinterlegt •••••••• (Feld leer lassen zum Behalten)"
       : "Noch kein Schlüssel hinterlegt";
@@ -447,6 +476,9 @@ async function loadConnection() {
     document.querySelector("[data-reveal-key='external_tts_api_key']").hidden =
       !connection.has_external_key;
     updateEngineFields();
+    if (connection.tts_engine === "edge") {
+      ensureEdgeVoicesLoaded();
+    }
   } catch (error) {
     addLog("error", `Verbindungsdaten nicht ladbar: ${error.message}`);
   }
@@ -506,7 +538,10 @@ connectionForm.addEventListener("submit", async (event) => {
     if (model) {
       body.external_tts_model = model;
     }
-    const voice = connectionForm.elements.tts_voice.value.trim();
+    const voice =
+      body.tts_engine === "edge"
+        ? connectionForm.elements.tts_voice_edge.value.trim()
+        : connectionForm.elements.tts_voice.value.trim();
     if (voice) {
       body.tts_voice = voice;
     }

@@ -68,6 +68,14 @@ async def tts_voices(request: Request) -> list[dict[str, str]]:
     return _service(request).tts_engine.list_voices()
 
 
+@router.get("/tts/edge-voices")
+async def edge_voices() -> list[dict[str, str]]:
+    """Alle Microsoft-Edge-Stimmen, unabhängig vom aktuell aktiven Anbieter."""
+    from app.tts.edge import fetch_all_voices
+
+    return await fetch_all_voices()
+
+
 @router.get("/audio/devices")
 async def audio_devices() -> list[dict[str, str]]:
     return list_audio_devices()
