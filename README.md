@@ -34,6 +34,14 @@ Eine neue Version kann über eine vorhandene Installation installiert werden.
 Lokale Einstellungen und API-Schlüssel unter
 `%LOCALAPPDATA%\NOEMA\TikTokBridge` bleiben dabei erhalten.
 
+> [!NOTE]
+> Beim Start des Setups zeigt Windows eine Warnmeldung („Unbekannter
+> Herausgeber" bzw. SmartScreen/Benutzerkontensteuerung). Das ist normal:
+> Die Software ist Open Source, aber nicht mit einem kostenpflichtigen
+> Herausgeber-Zertifikat signiert. Die Meldung kann über „Weitere
+> Informationen" → „Trotzdem ausführen" bestätigt werden. Wer sichergehen
+> will, kann den Quellcode in diesem Repository einsehen.
+
 ## Funktionsumfang
 
 - lokaler FastAPI-Dienst und deutschsprachige Weboberfläche
