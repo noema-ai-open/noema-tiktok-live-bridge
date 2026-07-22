@@ -88,10 +88,6 @@ body {
   background: var(--noema-green);
 }
 
-.kitt {
-  border-bottom: 1px solid rgba(61, 139, 255, 0.08);
-}
-
 input[type="text"],
 input[type="number"],
 select,

@@ -11,56 +11,154 @@ function installKittStyles() {
   document.head.append(link);
 }
 
-function mountKittStrip() {
+let eqCanvas = null;
+let eqContext = null;
+let eqLoopStarted = false;
+let level = 0;
+let tick = 0;
+
+function clamp01(value) {
+  return Math.min(1, Math.max(0, value));
+}
+
+function queueEqualizerFrame() {
+  window.requestAnimationFrame(drawEqualizer);
+}
+
+function drawEqualizer() {
+  tick += 1;
+  const kitt = document.querySelector("#kitt");
+  const speaking = Boolean(kitt && kitt.classList.contains("is-speaking"));
+  const active = Boolean(kitt && kitt.classList.contains("is-active"));
+  const connected = Boolean(kitt && kitt.dataset.state === "live");
+  const mode = speaking ? "speaking" : (connected ? "connected" : "idle");
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let target = 0.05;
+  if (mode === "connected") {
+    target = reduced ? 0.30 : 0.30 + 0.08 * Math.sin(tick * 0.05);
+  } else if (mode === "speaking") {
+    target = reduced
+      ? 0.55
+      : clamp01(
+        0.52
+          + 0.30 * Math.sin(tick * 0.085)
+          + 0.16 * Math.sin(tick * 0.21 + 1.3)
+          + 0.08 * Math.sin(tick * 0.47 + 2.7),
+      );
+  }
+  if (active) {
+    target = Math.max(target, 0.78);
+  }
+  const k = target > level ? 0.32 : 0.10;
+  level += (target - level) * k;
+
+  const w = eqCanvas ? eqCanvas.clientWidth : 0;
+  const h = eqCanvas ? eqCanvas.clientHeight : 0;
+  if (!w || !h || document.hidden || !eqContext) {
+    queueEqualizerFrame();
+    return;
+  }
+
+  const dpr = window.devicePixelRatio || 1;
+  const pixelWidth = Math.round(w * dpr);
+  const pixelHeight = Math.round(h * dpr);
+  if (eqCanvas.width !== pixelWidth || eqCanvas.height !== pixelHeight) {
+    eqCanvas.width = pixelWidth;
+    eqCanvas.height = pixelHeight;
+    eqContext.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  const ctx = eqContext;
+  ctx.clearRect(0, 0, w, h);
+  if (mode === "idle" && level < 0.02) {
+    queueEqualizerFrame();
+    return;
+  }
+
+  const segments = 31;
+  const segGap = 2;
+  const segW = (w - segGap * (segments - 1)) / segments;
+  const center = (segments - 1) / 2;
+  const reach = level * 1.08;
+  const rows = [
+    { y: h * 0.00, hh: h * 0.22, scale: 0.55 },
+    { y: h * 0.30, hh: h * 0.40, scale: 1.00 },
+    { y: h * 0.78, hh: h * 0.22, scale: 0.55 },
+  ];
+  const sat = 90;
+  const baseL = mode === "speaking" ? 46 : 42;
+  const spanL = mode === "speaking" ? 16 : 12;
+  const alphaScale = mode === "connected" ? 0.9 : 1.0;
+
+  for (const row of rows) {
+    for (let i = 0; i < segments; i += 1) {
+      const dist = Math.abs(i - center) / center;
+      const lit = reach - dist;
+      if (lit <= 0) {
+        continue;
+      }
+      const intensity = Math.min(1, lit * 1.7);
+      const flick = reduced
+        ? 1
+        : 0.88
+          + Math.sin(tick * 0.18 + i * 0.42) * 0.06
+          + Math.random() * 0.06;
+      const alpha = Math.min(1, intensity * row.scale * flick) * alphaScale;
+      const lightness = baseL + intensity * spanL;
+      ctx.fillStyle = `hsla(0, ${sat}%, ${lightness}%, ${alpha})`;
+      const x = i * (segW + segGap);
+      ctx.fillRect(x, row.y, segW, row.hh);
+    }
+  }
+
+  if (level > 0.05) {
+    const glowAlpha = Math.min(0.30, level * 0.4);
+    const grad = ctx.createLinearGradient(0, 0, w, 0);
+    grad.addColorStop(0, "hsla(0,90%,55%,0)");
+    grad.addColorStop(0.5, `hsla(0,90%,62%,${glowAlpha})`);
+    grad.addColorStop(1, "hsla(0,90%,55%,0)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, h * 0.30, w, h * 0.40);
+  }
+
+  queueEqualizerFrame();
+}
+
+function mountEqualizer() {
   const topbar = document.querySelector(".topbar");
-  const scanner = document.querySelector("#kitt");
+  const kitt = document.querySelector("#kitt");
   const statusCluster = document.querySelector(".status-cluster");
-  if (!topbar || !scanner || !statusCluster) {
+  if (!topbar || !kitt || !statusCluster) {
     return null;
   }
 
-  const existing = document.querySelector("#kitt-strip");
-  if (existing) {
-    if (!existing.contains(scanner)) {
-      existing.append(scanner);
-    }
-    return existing;
+  if (kitt.parentElement !== topbar || kitt.nextElementSibling !== statusCluster) {
+    topbar.insertBefore(kitt, statusCluster);
   }
 
-  const strip = document.createElement("div");
-  strip.className = "kitt-strip";
-  strip.id = "kitt-strip";
-  strip.dataset.speaking = "false";
-  strip.setAttribute("role", "img");
-  strip.setAttribute(
-    "aria-label",
-    "KITT-Scanner: reagiert auf eingehende Nachrichten und laufende Sprachausgabe",
-  );
-
-  topbar.insertBefore(strip, statusCluster);
-  strip.append(scanner);
-  return strip;
+  if (!eqCanvas) {
+    eqCanvas = kitt.querySelector(".kitt-eq-canvas");
+    eqContext = eqCanvas ? eqCanvas.getContext("2d") : null;
+  }
+  if (eqContext && !eqLoopStarted) {
+    eqLoopStarted = true;
+    drawEqualizer();
+  }
+  return kitt;
 }
 
 function setKittSpeaking(speaking) {
-  const active = Boolean(speaking);
-  const strip = document.querySelector("#kitt-strip");
-  const scanner = document.querySelector("#kitt");
-
-  for (const element of [strip, scanner]) {
-    if (element) {
-      element.classList.toggle("is-speaking", active);
-    }
-  }
-  if (strip) {
-    strip.dataset.speaking = active ? "true" : "false";
+  const kitt = document.querySelector("#kitt");
+  if (kitt) {
+    kitt.classList.toggle("is-speaking", Boolean(speaking));
   }
 }
 
 let kittStateRequestRunning = false;
 
 async function refreshKittSpeakingState() {
-  if (kittStateRequestRunning || document.visibilityState === "hidden") {
+  if (kittStateRequestRunning || document.hidden) {
     return;
   }
   kittStateRequestRunning = true;
@@ -119,7 +217,7 @@ function refreshStatusEventVisibility() {
 }
 
 installKittStyles();
-mountKittStrip();
+mountEqualizer();
 synchronizeVersion();
 refreshStatusEventVisibility();
 refreshKittSpeakingState();
@@ -133,7 +231,7 @@ if (chatList) {
 
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
-    mountKittStrip();
+    mountEqualizer();
     refreshKittSpeakingState();
   }
 });

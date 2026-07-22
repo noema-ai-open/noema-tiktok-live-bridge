@@ -646,36 +646,19 @@ connectionForm.addEventListener("submit", async (event) => {
   }
 });
 
-// Drei Voicebox-Reihen mit unterschiedlich getakteten Balken füllen.
-const VB_BARS_PER_ROW = 26;
-(function buildVoicebox() {
-  const rows = document.querySelectorAll("#kitt-voicebox .vb-row");
-  rows.forEach((row, rowIndex) => {
-    for (let i = 0; i < VB_BARS_PER_ROW; i += 1) {
-      const bar = document.createElement("i");
-      bar.style.animationDelay = `${(-Math.random() * 0.9).toFixed(2)}s`;
-      bar.style.animationDuration = `${(0.65 + Math.random() * 0.5 + rowIndex * 0.05).toFixed(2)}s`;
-      row.append(bar);
-    }
-  });
-})();
-
-// Chat-Impuls gemeinsam an Scanner und Voicebox setzen.
+// Chat-Impuls am Equalizer setzen.
 let kittSilenceTimer = null;
 function pulseKitt() {
-  const targets = [
-    document.querySelector("#kitt"),
-    document.querySelector("#kitt-voicebox"),
-  ].filter(Boolean);
-  if (targets.length === 0) {
+  const kitt = document.querySelector("#kitt");
+  if (!kitt) {
     return;
   }
-  targets.forEach((element) => element.classList.add("is-active"));
+  kitt.classList.add("is-active");
   if (kittSilenceTimer !== null) {
     window.clearTimeout(kittSilenceTimer);
   }
   kittSilenceTimer = window.setTimeout(() => {
-    targets.forEach((element) => element.classList.remove("is-active"));
+    kitt.classList.remove("is-active");
     kittSilenceTimer = null;
   }, 1600);
 }
