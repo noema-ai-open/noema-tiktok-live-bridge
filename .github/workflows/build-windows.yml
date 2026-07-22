@@ -116,12 +116,13 @@ jobs:
               "dist/noema-tiktok-bridge",
               "packaging/Output/NOEMA-TikTok-Bridge-Setup-v$env:APP_VERSION.exe"
             )) {
-              "===== SCAN $target =====" | Add-Content $report
-              $output = & $scanner -Scan -ScanType 3 -File $target -DisableRemediation 2>&1 | Out-String
+              $resolvedTarget = (Resolve-Path $target).Path
+              "===== SCAN $resolvedTarget =====" | Add-Content $report
+              $output = & $scanner -Scan -ScanType 3 -File $resolvedTarget -DisableRemediation 2>&1 | Out-String
               $exitCode = $LASTEXITCODE
               $output | Add-Content $report
               "SCAN EXIT: $exitCode" | Add-Content $report
-              $scanResults += [ordered]@{ target = $target; exit_code = $exitCode }
+              $scanResults += [ordered]@{ target = $resolvedTarget; exit_code = $exitCode }
               if ($exitCode -ne 0) {
                 $clean = $false
               }
