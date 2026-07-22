@@ -1,4 +1,4 @@
-"""Startprogramm für die installierte Windows-Version.
+r"""Startprogramm für die installierte Windows-Version.
 
 Arbeitsverzeichnis ist %LOCALAPPDATA%\NOEMA\TikTokBridge, damit Datenbank
 und .env nie im Programmordner (schreibgeschützt) landen.
