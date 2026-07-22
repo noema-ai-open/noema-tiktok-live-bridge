@@ -89,25 +89,8 @@ body {
 }
 
 .kitt {
-  height: 3px;
-  background: #09090d;
+  background: #0a0709;
   border-bottom: 1px solid rgba(61, 139, 255, 0.08);
-}
-
-.kitt span {
-  width: 24%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(61, 139, 255, 0.35),
-    var(--noema-cyan),
-    var(--noema-gold-bright),
-    transparent
-  );
-}
-
-.kitt[data-state="live"] span {
-  opacity: 0.72;
 }
 
 input[type="text"],

@@ -252,6 +252,11 @@ function addChatEvent(event) {
     elements.chatList.firstElementChild.remove();
   }
   elements.chatList.scrollTop = elements.chatList.scrollHeight;
+
+  // Voicebox schlägt bei echten Chat-Nachrichten aus (kein Status-Rauschen).
+  if (event.event_type === "chat_message") {
+    pulseKitt();
+  }
 }
 
 function addLog(level, text, timestamp = null) {
@@ -640,6 +645,24 @@ connectionForm.addEventListener("submit", async (event) => {
     button.disabled = false;
   }
 });
+
+// Kurzer heller/schneller KITT-Durchlauf als sichtbares Feedback, dass eine
+// Chat-Nachricht eingetroffen ist.
+let kittSilenceTimer = null;
+function pulseKitt() {
+  const kitt = document.querySelector("#kitt");
+  if (!kitt) {
+    return;
+  }
+  kitt.classList.add("is-active");
+  if (kittSilenceTimer !== null) {
+    window.clearTimeout(kittSilenceTimer);
+  }
+  kittSilenceTimer = window.setTimeout(() => {
+    kitt.classList.remove("is-active");
+    kittSilenceTimer = null;
+  }, 1600);
+}
 
 loadConnection();
 loadConfiguration();
