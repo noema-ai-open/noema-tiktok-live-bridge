@@ -146,7 +146,7 @@
 .kitt-console .kitt.is-speaking .kitt-scan,
 .kitt-console .kitt.is-active .kitt-scan {
   opacity: 1;
-  animation-duration: 0.58s;
+  animation: kitt-scan 0.58s ease-in-out infinite alternate;
   filter: brightness(1.75);
   box-shadow: 0 0 24px 7px rgba(var(--kitt-red-rgb), 0.92);
 }
