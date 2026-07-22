@@ -38,7 +38,7 @@ DEFAULT_VOICE = KNOWN_VOICES[0]
 _voice_cache: list[VoiceInfo] | None = None
 
 
-def _kitt_voice_info() -> VoiceInfo:
+def kitt_style_voice_info() -> VoiceInfo:
     return {"id": KITT_STYLE_VOICE_ID, "name": KITT_STYLE_VOICE_NAME}
 
 
@@ -47,8 +47,6 @@ async def fetch_all_voices() -> list[VoiceInfo]:
 
     Ergebnis wird für die Laufzeit der App zwischengespeichert, damit nicht
     jeder Dropdown-Aufruf im Frontend eine neue Netzabfrage auslöst.
-    Der lokale KITT-Stil steht immer an erster Stelle und benötigt keinen
-    zusätzlichen Download oder API-Schlüssel.
     """
     global _voice_cache
     if _voice_cache is not None:
@@ -59,24 +57,19 @@ async def fetch_all_voices() -> list[VoiceInfo]:
         raw_voices = await edge_tts.list_voices()
     except Exception:
         logger.exception("Could not fetch Edge voice list, using curated fallback")
-        return [_kitt_voice_info(), *(
-            {"id": voice, "name": voice} for voice in KNOWN_VOICES
-        )]
+        return [{"id": voice, "name": voice} for voice in KNOWN_VOICES]
 
     def sort_key(voice: dict) -> tuple[int, str]:
         locale = voice.get("Locale", "")
         return (0 if locale.startswith("de") else 1, locale)
 
     voices: list[VoiceInfo] = [
-        _kitt_voice_info(),
-        *[
-            {
-                "id": voice["ShortName"],
-                "name": f"{voice['ShortName']} — {voice.get('FriendlyName', voice['ShortName'])}",
-            }
-            for voice in sorted(raw_voices, key=sort_key)
-            if voice.get("ShortName")
-        ],
+        {
+            "id": voice["ShortName"],
+            "name": f"{voice['ShortName']} — {voice.get('FriendlyName', voice['ShortName'])}",
+        }
+        for voice in sorted(raw_voices, key=sort_key)
+        if voice.get("ShortName")
     ]
     _voice_cache = voices
     return voices
@@ -109,9 +102,7 @@ class EdgeTTSEngine(ExternalTTSEngine):
     def list_voices(self) -> list[VoiceInfo]:
         if not self.is_available():
             return []
-        return [_kitt_voice_info(), *(
-            {"id": voice, "name": voice} for voice in KNOWN_VOICES
-        )]
+        return [{"id": voice, "name": voice} for voice in KNOWN_VOICES]
 
     async def speak(
         self,
