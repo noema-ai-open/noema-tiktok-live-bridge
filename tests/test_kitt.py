@@ -119,23 +119,42 @@ async def test_frontend_uses_versioned_assets_and_disables_cache(tmp_path) -> No
     assert "VOICE LINK" not in response.text
 
 
-def test_kitt_frontend_is_only_the_slim_strip() -> None:
+def test_kitt_frontend_is_the_canvas_equalizer() -> None:
     root = Path(__file__).resolve().parents[1]
     frontend = root / "frontend"
     index = (frontend / "index.html").read_text(encoding="utf-8")
     script = (frontend / "noema-ui.js").read_text(encoding="utf-8")
     styles = (frontend / "kitt-header.css").read_text(encoding="utf-8")
 
-    assert 'strip.className = "kitt-strip"' in script
-    assert 'strip.id = "kitt-strip"' in script
-    assert "mountKittStrip" in script
-    assert "strip.append(scanner)" in script
+    assert 'class="kitt-eq"' in index
+    assert "<canvas" in index
+    assert "mountEqualizer" in script
+    assert "kitt-eq-canvas" in script
+    assert "requestAnimationFrame" in script
+    assert "/tts/state" in script
+    assert ".kitt-eq" in styles
+    assert "kitt-scan" not in index
     assert "kitt-voicebox" not in index
     assert "VOICE LINK" not in index
-    assert ".kitt-strip" in styles
-    assert ".kitt-console" not in styles
+    assert "kitt-strip" not in script
+    assert "kitt-strip-scan" not in script
+    assert "kitt-voicebox" not in script
+    assert "kitt-strip" not in styles
+    assert "kitt-strip-scan" not in styles
     assert ".kitt-voicebox" not in styles
-    assert "kitt-strip-scan" in styles
+    assert ".kitt-console" not in styles
+
+
+def test_app_js_has_no_dead_voicebox() -> None:
+    root = Path(__file__).resolve().parents[1]
+    text = (root / "frontend" / "app.js").read_text(encoding="utf-8")
+
+    assert "#kitt-voicebox" not in text
+    assert ".vb-row" not in text
+
+
+def test_version_is_expected() -> None:
+    assert __version__ == "0.1.28"
 
 
 def test_windows_installer_uses_official_portable_python_not_pyinstaller() -> None:
