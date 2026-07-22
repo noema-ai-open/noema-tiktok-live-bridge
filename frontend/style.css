@@ -12,6 +12,9 @@
   --danger: #f04747;
   --danger-dark: #3c1719;
   --warning: #edbd62;
+  --kitt-red: #ff2b2b;
+  --kitt-red-bright: #ff6a4a;
+  --kitt-red-rgb: 255, 40, 40;
   --radius: 10px;
 }
 
@@ -717,9 +720,7 @@ button:disabled {
   }
 }
 
-/* NOEMA KITT-Voicebox: drei Reihen roter Balken wie das originale
-   Sprachmodulator-Display. Wippt ständig leicht; bei Chat-Nachricht
-   schlagen die Balken kräftiger und heller aus. */
+/* KITT-Voicebox: drei Reihen mit ruhigem Grundrhythmus. */
 .kitt-voicebox {
   display: flex;
   flex-direction: column;
@@ -743,32 +744,31 @@ button:disabled {
   width: 12px;
   height: 30%;
   border-radius: 1px;
-  background: linear-gradient(180deg, #ff9a6a, #ff2b2b 55%, #7f1216);
-  box-shadow: 0 0 6px rgba(255, 40, 40, 0.35);
+  background: linear-gradient(
+    180deg,
+    var(--kitt-red-bright),
+    var(--kitt-red) 55%,
+    rgba(var(--kitt-red-rgb), 0.35)
+  );
+  box-shadow: 0 0 6px rgba(var(--kitt-red-rgb), 0.35);
   transform-origin: center;
   animation: vb-bounce 0.9s ease-in-out infinite;
 }
-/* Chat-Nachricht: kräftiger und heller ausschlagen */
+/* Chat-Nachricht: Voicebox kurz kräftiger und heller. */
 .kitt-voicebox.is-active .vb-row {
   transform: scaleY(1.35);
 }
 .kitt-voicebox.is-active .vb-row i {
   filter: brightness(1.5);
-  box-shadow: 0 0 12px rgba(255, 40, 40, 0.7);
+  box-shadow: 0 0 12px rgba(var(--kitt-red-rgb), 0.7);
   animation-duration: 0.45s;
 }
 @keyframes vb-bounce {
   0%, 100% { height: 16%; }
   50% { height: 72%; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .kitt-voicebox .vb-row i { animation: none; height: 45%; }
-  .kitt-voicebox.is-active .vb-row { transform: none; }
-}
 
-/* NOEMA KITT-Scanner: solider roter Lichtbalken, der wie beim echten KITT
-   waagerecht hin- und herfährt. Bei einer Chat-Nachricht fährt er schneller
-   und heller (visuelles Chat-Feedback). */
+/* KITT-Scanner: roter Lichtbalken mit Chat-Impuls. */
 .kitt {
   position: relative;
   height: 26px;
@@ -785,31 +785,33 @@ button:disabled {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 40, 40, 0.35) 30%,
-    #ff2b2b 48%,
-    #ff6a4a 52%,
-    rgba(255, 40, 40, 0.35) 70%,
+    rgba(var(--kitt-red-rgb), 0.35) 30%,
+    var(--kitt-red) 48%,
+    var(--kitt-red-bright) 52%,
+    rgba(var(--kitt-red-rgb), 0.35) 70%,
     transparent
   );
-  box-shadow: 0 0 14px 2px rgba(255, 40, 40, 0.6);
+  box-shadow: 0 0 14px 2px rgba(var(--kitt-red-rgb), 0.6);
   opacity: 0.25;
 }
-/* Ruhezustand: bei aktiver Verbindung fährt der Balken ruhig hin und her */
+/* Live-Verbindung: Scanner fährt ruhig hin und her. */
 .kitt[data-state="live"] .kitt-scan {
   opacity: 0.9;
   animation: kitt-scan 2.6s ease-in-out infinite alternate;
 }
-/* Chat-Nachricht: schneller und heller */
+/* Chat-Nachricht: Scanner kurz schneller und heller. */
 .kitt.is-active .kitt-scan {
   animation-duration: 0.7s;
   filter: brightness(1.6);
-  box-shadow: 0 0 24px 6px rgba(255, 40, 40, 0.95);
+  box-shadow: 0 0 24px 6px rgba(var(--kitt-red-rgb), 0.95);
 }
 @keyframes kitt-scan {
   from { left: -20%; }
   to { left: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .kitt-voicebox .vb-row i { animation: none; height: 45%; }
+  .kitt-voicebox.is-active .vb-row { transform: none; }
   .kitt .kitt-scan { animation: none !important; left: 40%; }
 }
 

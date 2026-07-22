@@ -646,8 +646,7 @@ connectionForm.addEventListener("submit", async (event) => {
   }
 });
 
-// KITT-Voicebox mit Balken bestücken: drei Reihen, jeder Balken mit eigenem
-// Rhythmus, damit das Display lebendig wippt.
+// Drei Voicebox-Reihen mit unterschiedlich getakteten Balken füllen.
 const VB_BARS_PER_ROW = 26;
 (function buildVoicebox() {
   const rows = document.querySelectorAll("#kitt-voicebox .vb-row");
@@ -661,8 +660,7 @@ const VB_BARS_PER_ROW = 26;
   });
 })();
 
-// Kurzer heller/schneller KITT-Ausschlag als sichtbares Feedback, dass eine
-// Chat-Nachricht eingetroffen ist (Scanner + Voicebox).
+// Chat-Impuls gemeinsam an Scanner und Voicebox setzen.
 let kittSilenceTimer = null;
 function pulseKitt() {
   const targets = [
