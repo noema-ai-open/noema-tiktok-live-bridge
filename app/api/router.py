@@ -26,6 +26,15 @@ async def status(request: Request) -> dict[str, object]:
     return _service(request).status_payload()
 
 
+@router.get("/tts/state")
+async def tts_state(request: Request) -> dict[str, bool]:
+    """Leichter Live-Status für das KITT-Modul in der lokalen Oberfläche."""
+    current_speech = _service(request).tts_worker._current_speech
+    return {
+        "speaking": current_speech is not None and not current_speech.done(),
+    }
+
+
 @router.get("/events")
 async def events(
     request: Request, limit: int = Query(default=100, ge=1, le=1000)
@@ -78,10 +87,10 @@ async def sapi_voices() -> list[dict[str, str]]:
 
 @router.get("/tts/edge-voices")
 async def edge_voices() -> list[dict[str, str]]:
-    """Alle Microsoft-Edge-Stimmen, unabhängig vom aktuell aktiven Anbieter."""
-    from app.tts.edge import fetch_all_voices
+    """Alle Microsoft-Edge-Stimmen plus lokaler NOEMA-Klangpreset."""
+    from app.tts.edge import fetch_all_voices, kitt_style_voice_info
 
-    return await fetch_all_voices()
+    return [kitt_style_voice_info(), *(await fetch_all_voices())]
 
 
 @router.get("/audio/devices")

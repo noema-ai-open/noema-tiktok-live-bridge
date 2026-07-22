@@ -7,6 +7,15 @@ from app.tts.external import ExternalTTSEngine
 
 logger = logging.getLogger(__name__)
 
+# Eigener, rechtlich neutraler Klang-Preset. Er imitiert keine konkrete
+# Schauspielerstimme, sondern kombiniert eine reguläre Microsoft-Stimme mit
+# tieferer Tonlage und ruhigerem Tempo zu einem Bordcomputer-Klang.
+KITT_STYLE_VOICE_ID = "noema-kitt-style"
+KITT_STYLE_VOICE_NAME = "NOEMA KITT-Stil — tiefer synthetischer Bordcomputer"
+KITT_STYLE_BASE_VOICE = "de-DE-ConradNeural"
+KITT_STYLE_RATE = "-9%"
+KITT_STYLE_PITCH = "-18Hz"
+
 # Kuratierte Auswahl als Rückfallebene, falls die Live-Abfrage aller
 # Microsoft-Stimmen (siehe fetch_all_voices) fehlschlägt (z. B. kein Netz).
 KNOWN_VOICES = [
@@ -27,6 +36,10 @@ KNOWN_VOICES = [
 DEFAULT_VOICE = KNOWN_VOICES[0]
 
 _voice_cache: list[VoiceInfo] | None = None
+
+
+def kitt_style_voice_info() -> VoiceInfo:
+    return {"id": KITT_STYLE_VOICE_ID, "name": KITT_STYLE_VOICE_NAME}
 
 
 async def fetch_all_voices() -> list[VoiceInfo]:
@@ -106,9 +119,18 @@ class EdgeTTSEngine(ExternalTTSEngine):
                 "Edge-TTS nicht installiert (Paket edge-tts fehlt)"
             ) from exc
 
+        selected_voice = voice or DEFAULT_VOICE
+        prosody: dict[str, str] = {}
+        if selected_voice == KITT_STYLE_VOICE_ID:
+            selected_voice = KITT_STYLE_BASE_VOICE
+            prosody = {
+                "rate": KITT_STYLE_RATE,
+                "pitch": KITT_STYLE_PITCH,
+            }
+
         audio = bytearray()
         try:
-            communicate = edge_tts.Communicate(text, voice or DEFAULT_VOICE)
+            communicate = edge_tts.Communicate(text, selected_voice, **prosody)
             async for chunk in communicate.stream():
                 if chunk.get("type") == "audio" and chunk.get("data"):
                     audio.extend(chunk["data"])
