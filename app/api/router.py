@@ -87,10 +87,10 @@ async def sapi_voices() -> list[dict[str, str]]:
 
 @router.get("/tts/edge-voices")
 async def edge_voices() -> list[dict[str, str]]:
-    """Alle Microsoft-Edge-Stimmen, unabhängig vom aktuell aktiven Anbieter."""
-    from app.tts.edge import fetch_all_voices
+    """Alle Microsoft-Edge-Stimmen plus lokaler NOEMA-Klangpreset."""
+    from app.tts.edge import fetch_all_voices, kitt_style_voice_info
 
-    return await fetch_all_voices()
+    return [kitt_style_voice_info(), *(await fetch_all_voices())]
 
 
 @router.get("/audio/devices")
