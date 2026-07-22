@@ -77,8 +77,11 @@ jobs:
           if ($index -match "kitt-voicebox|VOICE LINK") {
             throw "Altes großes KITT-Modul wurde verpackt."
           }
-          if ($ui -notmatch "mountKittStrip" -or $css -notmatch "\.kitt-strip") {
-            throw "Schlanker KITT-Scanner fehlt im Installer."
+          if ($ui -notmatch "mountEqualizer" -or $css -notmatch "\.kitt-eq") {
+            throw "KITT-Equalizer fehlt im Installer."
+          }
+          if ($ui -match "mountKittStrip" -or $css -match "\.kitt-strip") {
+            throw "Veralteter KITT-Scanner ist noch im Installer."
           }
 
       - name: Microsoft Defender prüft Laufzeit und Installer
