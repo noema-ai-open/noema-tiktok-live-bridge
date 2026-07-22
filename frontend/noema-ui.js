@@ -11,27 +11,25 @@ function installKittStyles() {
   document.head.append(link);
 }
 
-function mountKittConsole() {
+function mountKittStrip() {
   const topbar = document.querySelector(".topbar");
   const scanner = document.querySelector("#kitt");
-  const voicebox = document.querySelector("#kitt-voicebox");
   const statusCluster = document.querySelector(".status-cluster");
   if (!topbar || !scanner || !statusCluster) {
     return null;
   }
 
-  const existing = document.querySelector("#kitt-console");
+  const existing = document.querySelector("#kitt-strip");
   if (existing) {
+    if (!existing.contains(scanner)) {
+      existing.append(scanner);
+    }
     return existing;
-  }
-
-  if (voicebox) {
-    voicebox.remove();
   }
 
   const strip = document.createElement("div");
   strip.className = "kitt-strip";
-  strip.id = "kitt-console";
+  strip.id = "kitt-strip";
   strip.dataset.speaking = "false";
   strip.setAttribute("role", "img");
   strip.setAttribute(
@@ -46,7 +44,7 @@ function mountKittConsole() {
 
 function setKittSpeaking(speaking) {
   const active = Boolean(speaking);
-  const strip = document.querySelector("#kitt-console");
+  const strip = document.querySelector("#kitt-strip");
   const scanner = document.querySelector("#kitt");
 
   for (const element of [strip, scanner]) {
@@ -121,7 +119,7 @@ function refreshStatusEventVisibility() {
 }
 
 installKittStyles();
-mountKittConsole();
+mountKittStrip();
 synchronizeVersion();
 refreshStatusEventVisibility();
 refreshKittSpeakingState();
@@ -135,7 +133,7 @@ if (chatList) {
 
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
-    mountKittConsole();
+    mountKittStrip();
     refreshKittSpeakingState();
   }
 });
