@@ -6,17 +6,17 @@ function installKittStyles() {
   }
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = "/kitt-header.css";
+  link.href = `/kitt-header.css${window.location.search || ""}`;
   link.dataset.kittHeader = "true";
   document.head.append(link);
 }
 
 function mountKittConsole() {
   const topbar = document.querySelector(".topbar");
-  const voicebox = document.querySelector("#kitt-voicebox");
   const scanner = document.querySelector("#kitt");
+  const voicebox = document.querySelector("#kitt-voicebox");
   const statusCluster = document.querySelector(".status-cluster");
-  if (!topbar || !voicebox || !scanner || !statusCluster) {
+  if (!topbar || !scanner || !statusCluster) {
     return null;
   }
 
@@ -25,38 +25,37 @@ function mountKittConsole() {
     return existing;
   }
 
-  const consoleElement = document.createElement("div");
-  consoleElement.className = "kitt-console";
-  consoleElement.id = "kitt-console";
-  consoleElement.dataset.speaking = "false";
-  consoleElement.setAttribute("role", "img");
-  consoleElement.setAttribute(
+  if (voicebox) {
+    voicebox.remove();
+  }
+
+  const strip = document.createElement("div");
+  strip.className = "kitt-strip";
+  strip.id = "kitt-console";
+  strip.dataset.speaking = "false";
+  strip.setAttribute("role", "img");
+  strip.setAttribute(
     "aria-label",
-    "KITT-Sprachmodul: reagiert auf eingehende Nachrichten und laufende Sprachausgabe",
+    "KITT-Scanner: reagiert auf eingehende Nachrichten und laufende Sprachausgabe",
   );
 
-  const label = document.createElement("span");
-  label.className = "kitt-console__label";
-  label.textContent = "VOICE LINK";
-
-  topbar.insertBefore(consoleElement, statusCluster);
-  consoleElement.append(voicebox, scanner, label);
-  return consoleElement;
+  topbar.insertBefore(strip, statusCluster);
+  strip.append(scanner);
+  return strip;
 }
 
 function setKittSpeaking(speaking) {
   const active = Boolean(speaking);
-  const consoleElement = document.querySelector("#kitt-console");
+  const strip = document.querySelector("#kitt-console");
   const scanner = document.querySelector("#kitt");
-  const voicebox = document.querySelector("#kitt-voicebox");
 
-  for (const element of [consoleElement, scanner, voicebox]) {
+  for (const element of [strip, scanner]) {
     if (element) {
       element.classList.toggle("is-speaking", active);
     }
   }
-  if (consoleElement) {
-    consoleElement.dataset.speaking = active ? "true" : "false";
+  if (strip) {
+    strip.dataset.speaking = active ? "true" : "false";
   }
 }
 
