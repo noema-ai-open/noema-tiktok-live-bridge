@@ -646,20 +646,38 @@ connectionForm.addEventListener("submit", async (event) => {
   }
 });
 
-// Kurzer heller/schneller KITT-Durchlauf als sichtbares Feedback, dass eine
-// Chat-Nachricht eingetroffen ist.
+// KITT-Voicebox mit Balken bestücken: drei Reihen, jeder Balken mit eigenem
+// Rhythmus, damit das Display lebendig wippt.
+const VB_BARS_PER_ROW = 26;
+(function buildVoicebox() {
+  const rows = document.querySelectorAll("#kitt-voicebox .vb-row");
+  rows.forEach((row, rowIndex) => {
+    for (let i = 0; i < VB_BARS_PER_ROW; i += 1) {
+      const bar = document.createElement("i");
+      bar.style.animationDelay = `${(-Math.random() * 0.9).toFixed(2)}s`;
+      bar.style.animationDuration = `${(0.65 + Math.random() * 0.5 + rowIndex * 0.05).toFixed(2)}s`;
+      row.append(bar);
+    }
+  });
+})();
+
+// Kurzer heller/schneller KITT-Ausschlag als sichtbares Feedback, dass eine
+// Chat-Nachricht eingetroffen ist (Scanner + Voicebox).
 let kittSilenceTimer = null;
 function pulseKitt() {
-  const kitt = document.querySelector("#kitt");
-  if (!kitt) {
+  const targets = [
+    document.querySelector("#kitt"),
+    document.querySelector("#kitt-voicebox"),
+  ].filter(Boolean);
+  if (targets.length === 0) {
     return;
   }
-  kitt.classList.add("is-active");
+  targets.forEach((element) => element.classList.add("is-active"));
   if (kittSilenceTimer !== null) {
     window.clearTimeout(kittSilenceTimer);
   }
   kittSilenceTimer = window.setTimeout(() => {
-    kitt.classList.remove("is-active");
+    targets.forEach((element) => element.classList.remove("is-active"));
     kittSilenceTimer = null;
   }, 1600);
 }
