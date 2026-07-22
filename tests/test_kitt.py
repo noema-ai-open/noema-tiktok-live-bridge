@@ -14,6 +14,7 @@ from app.tts.edge import (
     KITT_STYLE_RATE,
     KITT_STYLE_VOICE_ID,
 )
+from app.version import __version__
 
 
 async def wait_until(predicate, timeout: float = 1.0) -> None:
@@ -86,3 +87,28 @@ async def test_tts_state_reports_actual_playback(tmp_path) -> None:
             )
             stopped = await client.get("/tts/state")
             assert stopped.json() == {"speaking": False}
+
+
+@pytest.mark.asyncio
+async def test_frontend_uses_versioned_assets_and_disables_cache(tmp_path) -> None:
+    app = create_app(
+        AppConfig(
+            mode="fallback",
+            database_path=tmp_path / "frontend-cache.sqlite3",
+            tts_engine="dummy",
+        )
+    )
+
+    async with app.router.lifespan_context(app):
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get("/")
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == (
+        "no-store, no-cache, must-revalidate, max-age=0"
+    )
+    assert f'/app.js?v={__version__}' in response.text
+    assert f'/noema-ui.js?v={__version__}' in response.text
+    assert f'/kitt-header.css?v={__version__}' in response.text
+    assert f'>v{__version__}</span>' in response.text
