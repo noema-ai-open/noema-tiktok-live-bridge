@@ -1,5 +1,6 @@
 import asyncio
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 import httpx
@@ -112,3 +113,18 @@ async def test_frontend_uses_versioned_assets_and_disables_cache(tmp_path) -> No
     assert f'/noema-ui.js?v={__version__}' in response.text
     assert f'/kitt-header.css?v={__version__}' in response.text
     assert f'>v{__version__}</span>' in response.text
+
+
+def test_kitt_frontend_is_slim_strip_without_voicebox_console() -> None:
+    frontend = Path(__file__).resolve().parents[1] / "frontend"
+    script = (frontend / "noema-ui.js").read_text(encoding="utf-8")
+    styles = (frontend / "kitt-header.css").read_text(encoding="utf-8")
+
+    assert 'strip.className = "kitt-strip"' in script
+    assert "strip.append(scanner)" in script
+    assert "voicebox.remove()" in script
+    assert "consoleElement.append(voicebox" not in script
+    assert ".kitt-strip" in styles
+    assert ".kitt-voicebox" in styles
+    assert "display: none !important" in styles
+    assert "kitt-strip-scan" in styles
