@@ -1,6 +1,6 @@
 """Startprogramm für die installierte Windows-Version.
 
-Arbeitsverzeichnis ist %LOCALAPPDATA%\\NOEMA\\TikTokBridge, damit Datenbank
+Arbeitsverzeichnis ist %LOCALAPPDATA%\NOEMA\TikTokBridge, damit Datenbank
 und .env nie im Programmordner (schreibgeschützt) landen.
 """
 
@@ -63,13 +63,13 @@ def main() -> None:
 
     from app.config import AppConfig  # noqa: PLC0415 — erst nach chdir laden (.env)
     from app.main import create_app
+    from app.version import __version__
 
     import uvicorn
 
     config = AppConfig()
-    threading.Timer(
-        1.5, webbrowser.open, args=(f"http://127.0.0.1:{config.port}/",)
-    ).start()
+    frontend_url = f"http://127.0.0.1:{config.port}/?v={__version__}"
+    threading.Timer(1.5, webbrowser.open, args=(frontend_url,)).start()
     uvicorn.run(
         create_app(config),
         host="127.0.0.1",
