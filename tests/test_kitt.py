@@ -109,22 +109,48 @@ async def test_frontend_uses_versioned_assets_and_disables_cache(tmp_path) -> No
     assert response.headers["cache-control"] == (
         "no-store, no-cache, must-revalidate, max-age=0"
     )
+    assert f'/style.css?v={__version__}' in response.text
+    assert f'/noema-theme.css?v={__version__}' in response.text
+    assert f'/kitt-header.css?v={__version__}' in response.text
     assert f'/app.js?v={__version__}' in response.text
     assert f'/noema-ui.js?v={__version__}' in response.text
-    assert f'/kitt-header.css?v={__version__}' in response.text
     assert f'>v{__version__}</span>' in response.text
+    assert "kitt-voicebox" not in response.text
+    assert "VOICE LINK" not in response.text
 
 
-def test_kitt_frontend_is_slim_strip_without_voicebox_console() -> None:
-    frontend = Path(__file__).resolve().parents[1] / "frontend"
+def test_kitt_frontend_is_only_the_slim_strip() -> None:
+    root = Path(__file__).resolve().parents[1]
+    frontend = root / "frontend"
+    index = (frontend / "index.html").read_text(encoding="utf-8")
     script = (frontend / "noema-ui.js").read_text(encoding="utf-8")
     styles = (frontend / "kitt-header.css").read_text(encoding="utf-8")
 
     assert 'strip.className = "kitt-strip"' in script
+    assert 'strip.id = "kitt-strip"' in script
+    assert "mountKittStrip" in script
     assert "strip.append(scanner)" in script
-    assert "voicebox.remove()" in script
-    assert "consoleElement.append(voicebox" not in script
+    assert "kitt-voicebox" not in index
+    assert "VOICE LINK" not in index
     assert ".kitt-strip" in styles
-    assert ".kitt-voicebox" in styles
-    assert "display: none !important" in styles
+    assert ".kitt-console" not in styles
+    assert ".kitt-voicebox" not in styles
     assert "kitt-strip-scan" in styles
+
+
+def test_windows_installer_uses_official_portable_python_not_pyinstaller() -> None:
+    root = Path(__file__).resolve().parents[1]
+    workflow = (root / ".github" / "workflows" / "build-windows.yml").read_text(
+        encoding="utf-8"
+    )
+    installer = (root / "packaging" / "installer.iss").read_text(encoding="utf-8")
+    portable_builder = (root / "scripts" / "build-portable-runtime.ps1").read_text(
+        encoding="utf-8"
+    )
+
+    assert "pyinstaller" not in workflow.lower()
+    assert "build-portable-runtime.ps1" in workflow
+    assert "Microsoft Defender" in workflow
+    assert "runtime\\pythonw.exe" in installer
+    assert "python.org/ftp/python" in portable_builder
+    assert "official-python-embed" in portable_builder
