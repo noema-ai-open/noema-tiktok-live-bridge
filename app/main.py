@@ -16,20 +16,21 @@ from app.version import __version__
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 _FRONTEND_ASSET_SUFFIXES = {".css", ".js", ".html", ".svg", ".png"}
+_VERSIONED_ASSETS = (
+    "style.css",
+    "noema-theme.css",
+    "kitt-header.css",
+    "app.js",
+    "noema-ui.js",
+)
 
 
 def _frontend_index_html() -> str:
-    """Liefert das Frontend mit versionsgebundenen Asset-URLs.
-
-    Ohne Cache-Busting kann der Browser nach einem Update weiterhin eine alte
-    noema-ui.js laden. Dann zeigt die API zwar die neue Versionsnummer, aber die
-    Oberfläche bleibt technisch auf dem alten Stand. Genau das soll hier
-    dauerhaft ausgeschlossen werden.
-    """
+    """Liefert das Frontend ausschließlich mit versionsgebundenen Asset-URLs."""
     html = (FRONTEND_DIR / "index.html").read_text(encoding="utf-8")
     version_query = f"?v={__version__}"
 
-    for asset in ("style.css", "noema-theme.css", "app.js", "noema-ui.js"):
+    for asset in _VERSIONED_ASSETS:
         html = html.replace(f'/{asset}"', f'/{asset}{version_query}"')
 
     if "kitt-header.css" not in html:

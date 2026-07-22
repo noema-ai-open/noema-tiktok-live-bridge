@@ -30,25 +30,6 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Abhängigkeiten installieren
-        run: pip install -e ".[live,windows]" pyinstaller
-
-      - name: PyInstaller ohne störendes Konsolenfenster
-        run: >
-          pyinstaller --noconfirm --clean --noconsole --name noema-tiktok-bridge
-          --add-data "frontend;frontend"
-          --add-data ".env.example;."
-          --collect-all TikTokLive
-          --collect-all edge_tts
-          --collect-all aiohttp
-          --collect-all multidict
-          --collect-all yarl
-          --collect-all frozenlist
-          --collect-all aiosignal
-          --collect-all certifi
-          --hidden-import win32com.client
-          scripts/windows_launcher.py
-
       - name: Version aus dem Quellcode bestimmen
         id: version
         shell: pwsh
@@ -61,27 +42,141 @@ jobs:
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           Write-Host "Baue NOEMA TikTok Live Bridge v$version"
 
+      - name: Portable Windows-Laufzeit aus offiziellen Python-Dateien bauen
+        shell: pwsh
+        run: ./scripts/build-portable-runtime.ps1 -Version $env:APP_VERSION
+
       - name: Inno Setup bauen
         shell: cmd
         run: |
           choco install innosetup -y --no-progress
           "%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe" packaging\installer.iss
 
-      - name: Versionierten Installer erzeugen
+      - name: Versionierten Installer und Prüfsumme erzeugen
         shell: pwsh
         run: |
           $source = "packaging/Output/NOEMA-TikTok-Bridge-Setup.exe"
           $target = "packaging/Output/NOEMA-TikTok-Bridge-Setup-v$env:APP_VERSION.exe"
           Copy-Item $source $target -Force
+          $hash = (Get-FileHash $target -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $(Split-Path $target -Leaf)" | Set-Content "packaging/Output/SHA256SUMS.txt" -Encoding ascii
           Write-Host "Installer: $target"
+          Write-Host "SHA256: $hash"
+
+      - name: Paketinhalt gegen Versions- und UI-Rückfall prüfen
+        shell: pwsh
+        run: |
+          $runtime = "dist/noema-tiktok-bridge/runtime"
+          $version = & "$runtime/python.exe" -c "from app.version import __version__; print(__version__)"
+          if ($version.Trim() -ne $env:APP_VERSION) {
+            throw "Paketversion $version stimmt nicht mit $env:APP_VERSION überein."
+          }
+          $index = Get-Content "$runtime/frontend/index.html" -Raw
+          $ui = Get-Content "$runtime/frontend/noema-ui.js" -Raw
+          $css = Get-Content "$runtime/frontend/kitt-header.css" -Raw
+          if ($index -match "kitt-voicebox|VOICE LINK") {
+            throw "Altes großes KITT-Modul wurde verpackt."
+          }
+          if ($ui -notmatch "mountKittStrip" -or $css -notmatch "\.kitt-strip") {
+            throw "Schlanker KITT-Scanner fehlt im Installer."
+          }
+
+      - name: Microsoft Defender prüft Laufzeit und Installer
+        id: defender
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $report = "packaging/Output/defender-scan.txt"
+          $resultFile = "packaging/Output/defender-result.json"
+          $scanResults = @()
+          $clean = $true
+          New-Item -ItemType Directory -Path "packaging/Output" -Force | Out-Null
+          "Microsoft Defender Scan $(Get-Date -Format o)" | Set-Content $report -Encoding utf8
+
+          $candidates = @("$env:ProgramFiles\Windows Defender\MpCmdRun.exe")
+          $platform = Get-ChildItem "$env:ProgramData\Microsoft\Windows Defender\Platform" -Directory -ErrorAction SilentlyContinue |
+            Sort-Object Name -Descending |
+            Select-Object -First 1
+          if ($platform) {
+            $candidates += Join-Path $platform.FullName "MpCmdRun.exe"
+          }
+          $scanner = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+          if (-not $scanner) {
+            "Scanner nicht gefunden." | Add-Content $report
+            $clean = $false
+          } else {
+            "Scanner: $scanner" | Add-Content $report
+            $signatureOutput = & $scanner -SignatureUpdate 2>&1 | Out-String
+            $signatureExit = $LASTEXITCODE
+            "SIGNATURE EXIT: $signatureExit" | Add-Content $report
+            $signatureOutput | Add-Content $report
+
+            foreach ($target in @(
+              "dist/noema-tiktok-bridge",
+              "packaging/Output/NOEMA-TikTok-Bridge-Setup-v$env:APP_VERSION.exe"
+            )) {
+              $resolvedTarget = (Resolve-Path $target).Path
+              "===== SCAN $resolvedTarget =====" | Add-Content $report
+              $output = & $scanner -Scan -ScanType 3 -File $resolvedTarget -DisableRemediation 2>&1 | Out-String
+              $exitCode = $LASTEXITCODE
+              $output | Add-Content $report
+              "SCAN EXIT: $exitCode" | Add-Content $report
+              $scanResults += [ordered]@{ target = $resolvedTarget; exit_code = $exitCode }
+              if ($exitCode -ne 0) {
+                $clean = $false
+              }
+            }
+
+            try {
+              "===== GET-MPTHREATDETECTION =====" | Add-Content $report
+              (Get-MpThreatDetection -ErrorAction Stop | Format-List * | Out-String) | Add-Content $report
+            } catch {
+              "Get-MpThreatDetection fehlgeschlagen: $($_.Exception.Message)" | Add-Content $report
+            }
+          }
+
+          [ordered]@{
+            clean = $clean
+            scanner = $scanner
+            scans = $scanResults
+          } | ConvertTo-Json -Depth 5 | Set-Content $resultFile -Encoding utf8
+
+          Get-Content $report
+          if (-not $clean) {
+            exit 1
+          }
+
+      - name: Defender-Bericht speichern
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Defender-Bericht-v${{ steps.version.outputs.version }}
+          path: |
+            packaging/Output/defender-scan.txt
+            packaging/Output/defender-result.json
+          if-no-files-found: warn
+
+      - name: Defender-Ergebnis erzwingen
+        if: always()
+        shell: pwsh
+        run: |
+          $resultFile = "packaging/Output/defender-result.json"
+          if (-not (Test-Path $resultFile)) {
+            throw "Defender-Ergebnis fehlt."
+          }
+          $result = Get-Content $resultFile -Raw | ConvertFrom-Json
+          if (-not $result.clean) {
+            throw "Microsoft Defender Scan ist nicht sauber. Bericht-Artefakt prüfen."
+          }
 
       - name: Installer als Workflow-Artefakt speichern
         uses: actions/upload-artifact@v4
         with:
           name: NOEMA-TikTok-Bridge-Setup-v${{ steps.version.outputs.version }}
           path: |
-            packaging/Output/NOEMA-TikTok-Bridge-Setup.exe
             packaging/Output/NOEMA-TikTok-Bridge-Setup-v*.exe
+            packaging/Output/SHA256SUMS.txt
           if-no-files-found: error
 
       - name: GitHub Release veröffentlichen oder aktualisieren
@@ -97,5 +192,5 @@ jobs:
           make_latest: true
           overwrite_files: true
           files: |
-            packaging/Output/NOEMA-TikTok-Bridge-Setup.exe
             packaging/Output/NOEMA-TikTok-Bridge-Setup-v*.exe
+            packaging/Output/SHA256SUMS.txt
