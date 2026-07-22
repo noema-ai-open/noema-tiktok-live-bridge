@@ -1,8 +1,8 @@
 :root {
-  --kitt-red: #ff1f2d;
-  --kitt-red-bright: #ff5a52;
-  --kitt-red-dark: #4d080d;
-  --kitt-red-rgb: 255, 31, 45;
+  --kitt-red: #ff2636;
+  --kitt-red-bright: #ff655e;
+  --kitt-red-dark: #5a080f;
+  --kitt-red-rgb: 255, 38, 54;
 }
 
 .topbar {
@@ -10,175 +10,116 @@
   flex-wrap: nowrap;
 }
 
-.kitt-console {
-  display: grid;
-  grid-template-columns: 86px minmax(170px, 1fr);
-  grid-template-rows: 1fr auto;
+/* Die alte dreiteilige Voicebox bleibt nicht sichtbar. */
+.kitt-voicebox {
+  display: none !important;
+}
+
+/* Schmale, in den Header integrierte Scanner-Leiste. */
+.kitt-strip {
+  display: flex;
   align-items: center;
-  gap: 7px 14px;
-  flex: 1 1 420px;
-  max-width: 520px;
-  min-width: 300px;
+  flex: 1 1 620px;
+  width: min(760px, 100%);
+  max-width: 760px;
+  min-width: 280px;
   margin-inline: auto;
-  padding: 10px 14px 9px;
-  border: 1px solid rgba(var(--kitt-red-rgb), 0.24);
-  border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgba(18, 6, 8, 0.96), rgba(5, 4, 6, 0.98)),
-    #070507;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.035),
-    inset 0 0 24px rgba(var(--kitt-red-rgb), 0.035),
-    0 8px 26px rgba(0, 0, 0, 0.32);
-  transition: border-color 140ms ease, box-shadow 140ms ease;
+  padding-inline: 12px;
 }
 
-.kitt-console.is-speaking {
-  border-color: rgba(var(--kitt-red-rgb), 0.72);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    inset 0 0 30px rgba(var(--kitt-red-rgb), 0.12),
-    0 0 22px rgba(var(--kitt-red-rgb), 0.24),
-    0 8px 28px rgba(0, 0, 0, 0.38);
-}
-
-.kitt-console .kitt-voicebox {
-  grid-row: 1 / 3;
-  display: flex;
-  flex-direction: row;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 7px;
-  width: 86px;
-  height: 58px;
-  padding: 0;
-  background: transparent;
-}
-
-.kitt-console .kitt-voicebox .vb-row {
-  display: flex;
-  flex-direction: column-reverse;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 2px;
-  width: 20px;
-  height: 40px;
-  max-width: none;
-  transform: none !important;
-}
-
-.kitt-console .kitt-voicebox .vb-row:nth-child(2) {
-  height: 56px;
-}
-
-.kitt-console .kitt-voicebox .vb-row:nth-child(1) i:nth-child(n + 8),
-.kitt-console .kitt-voicebox .vb-row:nth-child(3) i:nth-child(n + 8),
-.kitt-console .kitt-voicebox .vb-row:nth-child(2) i:nth-child(n + 12) {
-  display: none;
-}
-
-.kitt-console .kitt-voicebox .vb-row i {
-  display: block;
-  flex: 0 0 4px;
-  width: 20px;
-  height: 4px !important;
-  min-height: 4px;
-  border-radius: 1px;
-  opacity: 0.18;
-  background: linear-gradient(90deg, var(--kitt-red-dark), var(--kitt-red), var(--kitt-red-dark));
-  box-shadow: 0 0 3px rgba(var(--kitt-red-rgb), 0.18);
-  transform: none !important;
-  transform-origin: center;
-  animation-name: kitt-voice-segment !important;
-  animation-timing-function: steps(2, end) !important;
-  animation-iteration-count: infinite !important;
-  animation-play-state: paused;
-}
-
-.kitt-console .kitt-voicebox .vb-row i:nth-child(-n + 2) {
-  opacity: 0.42;
-}
-
-.kitt-console .kitt-voicebox.is-active .vb-row i,
-.kitt-console .kitt-voicebox.is-speaking .vb-row i {
-  animation-play-state: running;
-  filter: brightness(1.45);
-  box-shadow: 0 0 8px rgba(var(--kitt-red-rgb), 0.72);
-}
-
-.kitt-console .kitt {
-  grid-column: 2;
+.kitt-strip .kitt {
   position: relative;
   width: 100%;
-  height: 25px;
-  overflow: hidden;
-  border: 1px solid rgba(var(--kitt-red-rgb), 0.20);
-  border-radius: 6px;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.018) 0,
-      rgba(255, 255, 255, 0.018) 1px,
-      transparent 1px,
-      transparent 11px
-    ),
-    #050406;
-  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.88);
+  height: 18px;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
-.kitt-console .kitt-scan {
-  top: 4px;
-  bottom: 4px;
-  width: 20%;
-  border-radius: 5px;
-  background: linear-gradient(
+/* Zwei feine Reihen aus roten Segmenten wie im Referenzbild. */
+.kitt-strip .kitt::before,
+.kitt-strip .kitt::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 5px;
+  background: repeating-linear-gradient(
     90deg,
-    transparent,
-    rgba(var(--kitt-red-rgb), 0.24) 22%,
-    var(--kitt-red) 47%,
-    var(--kitt-red-bright) 52%,
-    rgba(var(--kitt-red-rgb), 0.30) 76%,
-    transparent
+    rgba(var(--kitt-red-rgb), 0.16) 0 21px,
+    rgba(var(--kitt-red-rgb), 0.05) 21px 23px,
+    transparent 23px 26px
   );
-  box-shadow: 0 0 15px 3px rgba(var(--kitt-red-rgb), 0.62);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 11%, #000 89%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 11%, #000 89%, transparent);
+  opacity: 0.78;
+  transition: opacity 140ms ease, filter 140ms ease;
 }
 
-.kitt-console .kitt.is-speaking .kitt-scan,
-.kitt-console .kitt.is-active .kitt-scan {
+.kitt-strip .kitt::before {
+  top: 2px;
+}
+
+.kitt-strip .kitt::after {
+  bottom: 2px;
+}
+
+.kitt-strip .kitt[data-state="live"]::before,
+.kitt-strip .kitt[data-state="live"]::after {
+  opacity: 0.96;
+}
+
+.kitt-strip .kitt-scan {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  left: -30%;
+  width: 30%;
+  border-radius: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(var(--kitt-red-rgb), 0.86) 0 21px,
+    rgba(255, 111, 102, 0.96) 21px 23px,
+    transparent 23px 26px
+  );
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent);
+  box-shadow:
+    0 0 8px rgba(var(--kitt-red-rgb), 0.55),
+    0 0 20px rgba(var(--kitt-red-rgb), 0.30);
+  opacity: 0.24;
+  filter: brightness(1.05);
+}
+
+.kitt-strip .kitt[data-state="live"] .kitt-scan {
+  opacity: 0.92;
+  animation: kitt-strip-scan 2.5s ease-in-out infinite alternate;
+}
+
+.kitt-strip .kitt.is-active .kitt-scan,
+.kitt-strip .kitt.is-speaking .kitt-scan {
   opacity: 1;
-  animation: kitt-scan 0.58s ease-in-out infinite alternate;
+  animation: kitt-strip-scan 0.58s ease-in-out infinite alternate;
   filter: brightness(1.75);
-  box-shadow: 0 0 24px 7px rgba(var(--kitt-red-rgb), 0.92);
+  box-shadow:
+    0 0 10px rgba(var(--kitt-red-rgb), 0.95),
+    0 0 28px rgba(var(--kitt-red-rgb), 0.66);
 }
 
-.kitt-console__label {
-  grid-column: 2;
-  justify-self: end;
-  color: rgba(255, 102, 102, 0.64);
-  font-family: "Cascadia Mono", "Segoe UI Mono", monospace;
-  font-size: 0.56rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  line-height: 1;
+.kitt-strip.is-speaking .kitt::before,
+.kitt-strip.is-speaking .kitt::after {
+  opacity: 1;
+  filter: brightness(1.45);
 }
 
-.kitt-console.is-speaking .kitt-console__label {
-  color: var(--kitt-red-bright);
-  text-shadow: 0 0 8px rgba(var(--kitt-red-rgb), 0.62);
-}
-
-@keyframes kitt-voice-segment {
-  0%, 100% {
-    opacity: 0.16;
-    filter: brightness(0.72);
+@keyframes kitt-strip-scan {
+  from {
+    left: -30%;
   }
-  38% {
-    opacity: 1;
-    filter: brightness(1.75);
-  }
-  68% {
-    opacity: 0.38;
-    filter: brightness(1.05);
+  to {
+    left: 100%;
   }
 }
 
@@ -188,9 +129,9 @@
     padding-inline: 24px;
   }
 
-  .kitt-console {
-    max-width: 390px;
-    min-width: 260px;
+  .kitt-strip {
+    max-width: 470px;
+    min-width: 240px;
   }
 
   .status-cluster {
@@ -207,33 +148,30 @@
     flex-wrap: wrap;
   }
 
-  .kitt-console {
+  .kitt-strip {
     order: 3;
     flex-basis: 100%;
     width: 100%;
     max-width: none;
+    padding-inline: 0;
   }
 }
 
 @media (max-width: 640px) {
-  .kitt-console {
-    order: initial;
-    width: 100%;
+  .kitt-strip {
+    order: 2;
     min-width: 0;
     margin: 0;
   }
 
-  .kitt-console .kitt-voicebox {
-    width: 74px;
-  }
-
-  .kitt-console {
-    grid-template-columns: 74px minmax(0, 1fr);
+  .status-cluster {
+    order: 3;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .kitt-console .kitt-voicebox .vb-row i {
+  .kitt-strip .kitt-scan {
+    left: 35%;
     animation: none !important;
   }
 }
