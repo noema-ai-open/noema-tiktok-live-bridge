@@ -4,10 +4,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="dark">
-    <title>NOEMA Live Bridge v0.1.23</title>
+    <title>NOEMA Live Bridge v0.1.27</title>
     <link rel="icon" type="image/svg+xml" href="/noema-logo.svg">
     <link rel="stylesheet" href="/style.css">
     <link rel="stylesheet" href="/noema-theme.css">
+    <link rel="stylesheet" href="/kitt-header.css" data-kitt-header>
     <script src="/app.js" defer></script>
     <script src="/noema-ui.js" defer></script>
   </head>
@@ -18,7 +19,7 @@
           <img class="brand-word" src="/noema-wordmark.png" alt="NOEMA">
           <div class="title-line">
             <h1>TikTok Live Bridge</h1>
-            <span class="version-chip" id="app-version">v0.1.23</span>
+            <span class="version-chip" id="app-version">v0.1.27</span>
           </div>
           <p class="eyebrow eyebrow--sub">LOKALE STEUERUNG</p>
         </div>
@@ -40,12 +41,6 @@
         <a class="donate-link" href="https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=swoellner.pay@gmx.de&currency_code=EUR&item_name=NOEMA+TikTok+Live+Bridge" target="_blank" rel="noopener noreferrer">Spenden</a>
       </div>
     </header>
-    <!-- KITT: dreireihige Voicebox über dem Scanner. -->
-    <div class="kitt-voicebox" id="kitt-voicebox" aria-hidden="true">
-      <div class="vb-row"></div>
-      <div class="vb-row"></div>
-      <div class="vb-row"></div>
-    </div>
     <div class="kitt" id="kitt" data-state="idle" aria-hidden="true"><span class="kitt-scan"></span></div>
 
     <main class="dashboard">
