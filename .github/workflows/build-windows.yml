@@ -82,8 +82,17 @@ jobs:
           }
 
       - name: Microsoft Defender prüft Laufzeit und Installer
+        id: defender
+        continue-on-error: true
         shell: pwsh
         run: |
+          $report = "packaging/Output/defender-scan.txt"
+          $resultFile = "packaging/Output/defender-result.json"
+          $scanResults = @()
+          $clean = $true
+          New-Item -ItemType Directory -Path "packaging/Output" -Force | Out-Null
+          "Microsoft Defender Scan $(Get-Date -Format o)" | Set-Content $report -Encoding utf8
+
           $candidates = @("$env:ProgramFiles\Windows Defender\MpCmdRun.exe")
           $platform = Get-ChildItem "$env:ProgramData\Microsoft\Windows Defender\Platform" -Directory -ErrorAction SilentlyContinue |
             Sort-Object Name -Descending |
@@ -92,22 +101,72 @@ jobs:
             $candidates += Join-Path $platform.FullName "MpCmdRun.exe"
           }
           $scanner = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+
           if (-not $scanner) {
-            throw "Microsoft Defender Scanner ist auf dem Windows-Runner nicht verfügbar."
+            "Scanner nicht gefunden." | Add-Content $report
+            $clean = $false
+          } else {
+            "Scanner: $scanner" | Add-Content $report
+            $signatureOutput = & $scanner -SignatureUpdate 2>&1 | Out-String
+            $signatureExit = $LASTEXITCODE
+            "SIGNATURE EXIT: $signatureExit" | Add-Content $report
+            $signatureOutput | Add-Content $report
+
+            foreach ($target in @(
+              "dist/noema-tiktok-bridge",
+              "packaging/Output/NOEMA-TikTok-Bridge-Setup-v$env:APP_VERSION.exe"
+            )) {
+              "===== SCAN $target =====" | Add-Content $report
+              $output = & $scanner -Scan -ScanType 3 -File $target -DisableRemediation 2>&1 | Out-String
+              $exitCode = $LASTEXITCODE
+              $output | Add-Content $report
+              "SCAN EXIT: $exitCode" | Add-Content $report
+              $scanResults += [ordered]@{ target = $target; exit_code = $exitCode }
+              if ($exitCode -ne 0) {
+                $clean = $false
+              }
+            }
+
+            try {
+              "===== GET-MPTHREATDETECTION =====" | Add-Content $report
+              (Get-MpThreatDetection -ErrorAction Stop | Format-List * | Out-String) | Add-Content $report
+            } catch {
+              "Get-MpThreatDetection fehlgeschlagen: $($_.Exception.Message)" | Add-Content $report
+            }
           }
 
-          & $scanner -SignatureUpdate
-          Write-Host "Defender Signaturaktualisierung: Exit $LASTEXITCODE"
+          [ordered]@{
+            clean = $clean
+            scanner = $scanner
+            scans = $scanResults
+          } | ConvertTo-Json -Depth 5 | Set-Content $resultFile -Encoding utf8
 
-          foreach ($target in @(
-            "dist/noema-tiktok-bridge",
-            "packaging/Output/NOEMA-TikTok-Bridge-Setup-v$env:APP_VERSION.exe"
-          )) {
-            Write-Host "Defender-Scan: $target"
-            & $scanner -Scan -ScanType 3 -File $target -DisableRemediation
-            if ($LASTEXITCODE -ne 0) {
-              throw "Microsoft Defender beanstandet $target oder konnte den Scan nicht sauber abschließen. Exitcode: $LASTEXITCODE"
-            }
+          Get-Content $report
+          if (-not $clean) {
+            exit 1
+          }
+
+      - name: Defender-Bericht speichern
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Defender-Bericht-v${{ steps.version.outputs.version }}
+          path: |
+            packaging/Output/defender-scan.txt
+            packaging/Output/defender-result.json
+          if-no-files-found: warn
+
+      - name: Defender-Ergebnis erzwingen
+        if: always()
+        shell: pwsh
+        run: |
+          $resultFile = "packaging/Output/defender-result.json"
+          if (-not (Test-Path $resultFile)) {
+            throw "Defender-Ergebnis fehlt."
+          }
+          $result = Get-Content $resultFile -Raw | ConvertFrom-Json
+          if (-not $result.clean) {
+            throw "Microsoft Defender Scan ist nicht sauber. Bericht-Artefakt prüfen."
           }
 
       - name: Installer als Workflow-Artefakt speichern
