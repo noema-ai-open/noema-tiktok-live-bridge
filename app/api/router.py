@@ -26,6 +26,15 @@ async def status(request: Request) -> dict[str, object]:
     return _service(request).status_payload()
 
 
+@router.get("/tts/state")
+async def tts_state(request: Request) -> dict[str, bool]:
+    """Leichter Live-Status für das KITT-Modul in der lokalen Oberfläche."""
+    current_speech = _service(request).tts_worker._current_speech
+    return {
+        "speaking": current_speech is not None and not current_speech.done(),
+    }
+
+
 @router.get("/events")
 async def events(
     request: Request, limit: int = Query(default=100, ge=1, le=1000)
