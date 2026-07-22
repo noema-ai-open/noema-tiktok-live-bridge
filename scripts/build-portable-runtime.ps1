@@ -78,8 +78,11 @@ $kittCss = Get-Content (Join-Path $runtimeRoot "frontend\kitt-header.css") -Raw
 if ($index -match "kitt-voicebox" -or $index -match "VOICE LINK") {
     throw "Veraltetes großes KITT-Modul ist noch im Paket enthalten."
 }
-if ($ui -notmatch "mountKittStrip" -or $kittCss -notmatch "\.kitt-strip") {
-    throw "Der schlanke KITT-Scanner fehlt im Paket."
+if ($ui -notmatch "mountEqualizer" -or $kittCss -notmatch "\.kitt-eq") {
+    throw "Der KITT-Equalizer fehlt im Paket."
+}
+if ($ui -match "mountKittStrip" -or $kittCss -match "\.kitt-strip") {
+    throw "Veralteter KITT-Scanner ist noch im Paket enthalten."
 }
 if ($kittCss -match "\.kitt-console") {
     throw "Veraltete KITT-Konsolenregeln sind noch im Paket enthalten."
