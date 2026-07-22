@@ -35,7 +35,7 @@ jobs:
 
       - name: PyInstaller ohne störendes Konsolenfenster
         run: >
-          pyinstaller --noconfirm --noconsole --name noema-tiktok-bridge
+          pyinstaller --noconfirm --clean --noconsole --name noema-tiktok-bridge
           --add-data "frontend;frontend"
           --add-data ".env.example;."
           --collect-all TikTokLive
