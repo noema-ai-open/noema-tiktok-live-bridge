@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="dark">
-    <title>NOEMA Live Bridge v0.1.27</title>
+    <title>NOEMA Live Bridge v0.1.29</title>
     <link rel="icon" type="image/svg+xml" href="/noema-logo.svg">
     <link rel="stylesheet" href="/style.css">
     <link rel="stylesheet" href="/noema-theme.css">
@@ -19,7 +19,7 @@
           <img class="brand-word" src="/noema-wordmark.png" alt="NOEMA">
           <div class="title-line">
             <h1>TikTok Live Bridge</h1>
-            <span class="version-chip" id="app-version">v0.1.27</span>
+            <span class="version-chip" id="app-version">v0.1.29</span>
           </div>
           <p class="eyebrow eyebrow--sub">LOKALE STEUERUNG</p>
         </div>
@@ -183,6 +183,18 @@
                 <input id="tts-enabled" name="tts_enabled" type="checkbox">
                 <span class="switch-track" aria-hidden="true"><span></span></span>
                 <span class="visually-hidden">Text-to-Speech aktivieren</span>
+              </label>
+            </div>
+
+            <div class="form-row form-row--toggle">
+              <div>
+                <label for="welcome-new-viewers">Neue Zuschauer begrüßen</label>
+                <p>Beim ersten Beitritt automatisch mit Anzeigenamen willkommen heißen</p>
+              </div>
+              <label class="switch">
+                <input id="welcome-new-viewers" name="welcome_new_viewers" type="checkbox">
+                <span class="switch-track" aria-hidden="true"><span></span></span>
+                <span class="visually-hidden">Automatische Begrüßung neuer Zuschauer aktivieren</span>
               </label>
             </div>
 

@@ -8,14 +8,23 @@ def test_settings_store_has_defaults_and_persists_partial_update(tmp_path) -> No
     path = tmp_path / "settings.sqlite3"
     store = SettingsStore(path)
     assert store.get().retention == "none"
-    updated = store.update(SettingsUpdate(max_message_length=42, block_urls=False))
+    assert store.get().welcome_new_viewers is False
+    updated = store.update(
+        SettingsUpdate(
+            max_message_length=42,
+            block_urls=False,
+            welcome_new_viewers=True,
+        )
+    )
     assert updated.max_message_length == 42
     assert updated.block_urls is False
+    assert updated.welcome_new_viewers is True
     assert updated.spam_max_repetitions == 2
     store.close()
 
     reopened = SettingsStore(path)
     assert reopened.get().max_message_length == 42
+    assert reopened.get().welcome_new_viewers is True
     reopened.close()
 
 

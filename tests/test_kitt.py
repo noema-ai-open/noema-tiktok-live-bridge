@@ -154,7 +154,7 @@ def test_app_js_has_no_dead_voicebox() -> None:
 
 
 def test_version_is_expected() -> None:
-    assert __version__ == "0.1.28"
+    assert __version__ == "0.1.29"
 
 
 def test_windows_installer_uses_official_portable_python_not_pyinstaller() -> None:

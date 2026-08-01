@@ -19,6 +19,7 @@ const elements = {
   settingsForm: document.querySelector("#settings-form"),
   settingsMessage: document.querySelector("#settings-message"),
   ttsEnabled: document.querySelector("#tts-enabled"),
+  welcomeNewViewers: document.querySelector("#welcome-new-viewers"),
   ttsDevice: document.querySelector("#tts-device"),
   ttsVolume: document.querySelector("#tts-volume"),
   volumeOutput: document.querySelector("#volume-output"),
@@ -107,6 +108,7 @@ function setOptions(select, items, emptyLabel, selectedValue) {
 
 function applySettings(settings) {
   elements.ttsEnabled.checked = Boolean(settings.tts_enabled);
+  elements.welcomeNewViewers.checked = Boolean(settings.welcome_new_viewers);
   elements.ttsVolume.value = String(settings.tts_volume);
   elements.volumeOutput.textContent = `${settings.tts_volume} %`;
   elements.ttsCooldown.value = String(settings.tts_user_cooldown_seconds);
@@ -126,6 +128,7 @@ function linesFrom(text) {
 function collectSettings() {
   return {
     tts_enabled: elements.ttsEnabled.checked,
+    welcome_new_viewers: elements.welcomeNewViewers.checked,
     tts_user_cooldown_seconds: Number.parseFloat(elements.ttsCooldown.value),
     tts_max_length: Number.parseInt(elements.ttsMaxLength.value, 10),
     blacklist_words: linesFrom(elements.blacklist.value),
