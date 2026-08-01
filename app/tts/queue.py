@@ -58,6 +58,7 @@ class TTSQueueWorker:
         self._speaker_task: asyncio.Task[None] | None = None
         self._current_speech: asyncio.Task[None] | None = None
         self._last_spoken_by_user: dict[str, float] = {}
+        self._welcomed_user_ids: set[str] = set()
         self._running = False
 
     @property
@@ -140,6 +141,9 @@ class TTSQueueWorker:
             event = await queue.get()
             if not isinstance(event, Event):
                 continue
+            if event.event_type == EventType.JOIN:
+                self._queue_welcome(event)
+                continue
             if event.event_type != EventType.CHAT_MESSAGE or event.message is None:
                 continue
             now = time.monotonic()
@@ -157,6 +161,19 @@ class TTSQueueWorker:
                 continue
             self._last_spoken_by_user[event.user.user_id] = now
             self._enqueue(text)
+
+    def _queue_welcome(self, event: Event) -> None:
+        user_id = event.user.user_id
+        if not self.settings.welcome_new_viewers or user_id in self._welcomed_user_ids:
+            return
+        display_name = sanitize_text(event.user.display_name)
+        if not display_name:
+            return
+        text = self._prepare(f"Willkommen, {display_name}!")
+        if not text:
+            return
+        self._welcomed_user_ids.add(user_id)
+        self._enqueue(text)
 
     def _prepare(self, text: str) -> str:
         return sanitize_text(text)[: self.settings.tts_max_length].rstrip()

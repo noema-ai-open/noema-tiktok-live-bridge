@@ -19,6 +19,7 @@ class RuntimeSettings(BaseModel):
     spam_window_seconds: float = Field(default=30.0, gt=0, le=3600)
     user_cooldown_seconds: float = Field(default=0.0, ge=0, le=3600)
     tts_enabled: bool = True
+    welcome_new_viewers: bool = False
     read_username: bool = False
     tts_max_length: int = Field(default=300, ge=1, le=10_000)
     tts_user_cooldown_seconds: float = Field(default=0.0, ge=0, le=3600)
@@ -41,6 +42,7 @@ class SettingsUpdate(BaseModel):
     spam_window_seconds: float | None = Field(default=None, gt=0, le=3600)
     user_cooldown_seconds: float | None = Field(default=None, ge=0, le=3600)
     tts_enabled: bool | None = None
+    welcome_new_viewers: bool | None = None
     read_username: bool | None = None
     tts_max_length: int | None = Field(default=None, ge=1, le=10_000)
     tts_user_cooldown_seconds: float | None = Field(default=None, ge=0, le=3600)

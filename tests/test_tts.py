@@ -60,6 +60,53 @@ async def test_tts_queue_applies_per_user_cooldown_and_max_length(event_factory)
 
 
 @pytest.mark.asyncio
+async def test_tts_optionally_welcomes_each_viewer_once(event_factory) -> None:
+    bus = EventBus()
+    engine = DummyEngine()
+    worker = TTSQueueWorker(
+        bus,
+        engine,
+        RuntimeSettings(tts_enabled=True, welcome_new_viewers=True),
+    )
+    await worker.start()
+    try:
+        first = event_factory(event_id="join-1", event_type="join", user_id="user-1")
+        first.user.display_name = "<b>Neue Viewer</b>"
+        repeated = event_factory(
+            event_id="join-2", event_type="join", user_id="user-1"
+        )
+        second = event_factory(event_id="join-3", event_type="join", user_id="user-2")
+
+        await bus.publish(first)
+        await bus.publish(repeated)
+        await bus.publish(second)
+
+        await wait_until(lambda: len(engine.spoken_texts) == 2)
+        assert engine.spoken_texts == [
+            "Willkommen, Neue Viewer!",
+            "Willkommen, Viewer!",
+        ]
+    finally:
+        await worker.stop()
+
+
+@pytest.mark.asyncio
+async def test_tts_does_not_welcome_viewers_when_option_is_disabled(
+    event_factory,
+) -> None:
+    bus = EventBus()
+    engine = DummyEngine()
+    worker = TTSQueueWorker(bus, engine, RuntimeSettings(tts_enabled=True))
+    await worker.start()
+    try:
+        await bus.publish(event_factory(event_type="join"))
+        await asyncio.sleep(0.02)
+        assert engine.spoken_texts == []
+    finally:
+        await worker.stop()
+
+
+@pytest.mark.asyncio
 async def test_tts_queue_overflow_discards_oldest_waiting_item(event_factory) -> None:
     bus = EventBus()
     engine = DummyEngine(duration=0.05)
