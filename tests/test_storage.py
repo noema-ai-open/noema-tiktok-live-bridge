@@ -9,15 +9,18 @@ def test_settings_store_has_defaults_and_persists_partial_update(tmp_path) -> No
     store = SettingsStore(path)
     assert store.get().retention == "none"
     assert store.get().welcome_new_viewers is False
+    assert store.get().auto_read_chat is True
     updated = store.update(
         SettingsUpdate(
             max_message_length=42,
             block_urls=False,
+            auto_read_chat=False,
             welcome_new_viewers=True,
         )
     )
     assert updated.max_message_length == 42
     assert updated.block_urls is False
+    assert updated.auto_read_chat is False
     assert updated.welcome_new_viewers is True
     assert updated.spam_max_repetitions == 2
     store.close()
@@ -25,6 +28,7 @@ def test_settings_store_has_defaults_and_persists_partial_update(tmp_path) -> No
     reopened = SettingsStore(path)
     assert reopened.get().max_message_length == 42
     assert reopened.get().welcome_new_viewers is True
+    assert reopened.get().auto_read_chat is False
     reopened.close()
 
 

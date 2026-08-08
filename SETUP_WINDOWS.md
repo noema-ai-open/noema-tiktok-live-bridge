@@ -90,7 +90,9 @@ installiert sein. In der Weboberfläche:
 1. Unter „Stimme“ eine verfügbare Systemstimme wählen oder die Standardstimme
    belassen.
 2. Unter „Audiogerät“ zunächst die Standardausgabe wählen.
-3. „Text-to-Speech“ aktivieren und Einstellungen speichern.
+3. „Chat automatisch vorlesen“ nur aktivieren, wenn Originalnachrichten
+   zusätzlich gesprochen werden sollen. J.A.R.V.I.S.-Antworten über `/tts/test`
+   funktionieren unabhängig von diesem Schalter.
 4. Unter „Testnachricht“ einen kurzen Text abspielen.
 
 Erscheinen keine Stimmen oder Geräte, den Dienst nach der Installation von

@@ -263,6 +263,44 @@ async def test_tts_api_test_stop_voices_and_disabled_conflict(tmp_path) -> None:
             assert app.state.bridge.tts_worker.queue_size == 0
 
 
+@pytest.mark.asyncio
+async def test_auto_read_chat_can_be_disabled_while_jarvis_tts_stays_available(
+    tmp_path,
+) -> None:
+    app = create_app(
+        AppConfig(
+            mode="fallback",
+            database_path=tmp_path / "tts-auto-read-api.sqlite3",
+            tts_engine="dummy",
+        )
+    )
+    async with app.router.lifespan_context(app):
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            settings = await client.post(
+                "/settings",
+                json={"tts_enabled": True, "auto_read_chat": False},
+            )
+            assert settings.status_code == 200
+            assert settings.json()["auto_read_chat"] is False
+
+            jarvis = await client.post(
+                "/tts/test", json={"text": "J.A.R.V.I.S. Antwort"}
+            )
+            assert jarvis.status_code == 202
+            engine = app.state.bridge.tts_engine
+            await wait_until(lambda: engine.spoken_texts == ["J.A.R.V.I.S. Antwort"])
+
+            chat = await client.post(
+                "/fallback/message",
+                json={"display_name": "Viewer", "message": "Originalnachricht"},
+            )
+            assert chat.status_code == 200
+            assert chat.json()["accepted"] is True
+            await asyncio.sleep(0.02)
+            assert engine.spoken_texts == ["J.A.R.V.I.S. Antwort"]
+
+
 def test_sapi_is_inert_off_windows() -> None:
     engine = SAPIEngine()
     if not engine.is_available():

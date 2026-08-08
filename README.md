@@ -145,6 +145,12 @@ Die Auswahl eines Audiogeräts in der Weboberfläche wirkt auf Windows SAPI. Bei
 externer TTS bestimmt der konfigurierte Player beziehungsweise das Betriebssystem
 die Ausgabe.
 
+Der Schalter **Chat automatisch vorlesen** betrifft ausschließlich die
+Originalnachrichten aus dem TikTok-Chat. Manuelle beziehungsweise von NOEMA
+J.A.R.V.I.S. erzeugte Ausgaben über `POST /tts/test` bleiben aktiv, damit eine
+Nachricht nicht zuerst unverarbeitet und danach nochmals als KI-Antwort mit
+derselben Stimme gesprochen wird.
+
 ## Lokale Schnittstellen
 
 Wichtige Endpunkte:

@@ -63,13 +63,14 @@ async def test_get_settings_returns_runtime_settings(fallback_app) -> None:
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             await client.post(
                 "/settings",
-                json={"tts_enabled": True, "tts_volume": 37, "retention": "session"},
+                json={"tts_enabled": True, "auto_read_chat": False, "tts_volume": 37, "retention": "session"},
             )
 
             response = await client.get("/settings")
 
             assert response.status_code == 200
             assert response.json()["tts_enabled"] is True
+            assert response.json()["auto_read_chat"] is False
             assert response.json()["tts_volume"] == 37
             assert response.json()["retention"] == "session"
 

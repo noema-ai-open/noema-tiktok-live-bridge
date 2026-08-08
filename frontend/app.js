@@ -107,7 +107,7 @@ function setOptions(select, items, emptyLabel, selectedValue) {
 }
 
 function applySettings(settings) {
-  elements.ttsEnabled.checked = Boolean(settings.tts_enabled);
+  elements.ttsEnabled.checked = Boolean(settings.auto_read_chat);
   elements.welcomeNewViewers.checked = Boolean(settings.welcome_new_viewers);
   elements.ttsVolume.value = String(settings.tts_volume);
   elements.volumeOutput.textContent = `${settings.tts_volume} %`;
@@ -127,7 +127,7 @@ function linesFrom(text) {
 
 function collectSettings() {
   return {
-    tts_enabled: elements.ttsEnabled.checked,
+    auto_read_chat: elements.ttsEnabled.checked,
     welcome_new_viewers: elements.welcomeNewViewers.checked,
     tts_user_cooldown_seconds: Number.parseFloat(elements.ttsCooldown.value),
     tts_max_length: Number.parseInt(elements.ttsMaxLength.value, 10),
@@ -381,14 +381,14 @@ elements.ttsEnabled.addEventListener("change", async () => {
   try {
     await api("/settings", {
       method: "POST",
-      body: JSON.stringify({ tts_enabled: enabled }),
+      body: JSON.stringify({ auto_read_chat: enabled }),
     });
     setMessage(
       elements.settingsMessage,
-      enabled ? "Text-to-Speech ist an" : "Text-to-Speech ist aus",
+      enabled ? "Chat wird automatisch vorgelesen" : "Chat-Vorlesen ist aus; KI-TTS bleibt aktiv",
       "success",
     );
-    addLog("system", enabled ? "Text-to-Speech aktiviert" : "Text-to-Speech deaktiviert");
+    addLog("system", enabled ? "Automatisches Chat-Vorlesen aktiviert" : "Automatisches Chat-Vorlesen deaktiviert");
   } catch (error) {
     elements.ttsEnabled.checked = !enabled;
     setMessage(elements.settingsMessage, `Fehlgeschlagen: ${error.message}`, "error");
