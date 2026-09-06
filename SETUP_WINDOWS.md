@@ -1,7 +1,7 @@
 # Einrichtung unter Windows
 
 > **Für normale Nutzung: nur Variante A (Installer).** Einfach die
-> `NOEMA-TikTok-Bridge-Setup.exe` aus dem neuesten Release herunterladen und
+> [NOEMA-TikTok-Bridge-Setup-v0.1.29.exe](https://github.com/noema-ai-open/noema-tiktok-live-bridge/releases/download/v0.1.29/NOEMA-TikTok-Bridge-Setup-v0.1.29.exe) herunterladen und
 > doppelklicken — fertig. PowerShell, Python und Variante B sind ausschließlich
 > für Entwicklerinnen und Entwickler gedacht, die den Quellcode zuvor per
 > `git clone` heruntergeladen haben, und werden **im Projektordner** ausgeführt,
