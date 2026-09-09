@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "noema-tiktok-live-bridge"
-version = "0.1.29"
+version = "0.1.31"
 description = "Local-first TikTok Live event bridge with filtering and queued TTS"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -19,7 +19,7 @@ dependencies = [
 
 [project.optional-dependencies]
 live = [
-    "TikTokLive>=6",
+    "TikTokLive>=7.0.0,<8",
 ]
 windows = [
     "pywin32>=306; platform_system == 'Windows'",
