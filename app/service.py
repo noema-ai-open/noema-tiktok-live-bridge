@@ -149,7 +149,6 @@ class BridgeService:
         self.settings_store.close()
 
     async def apply_connection(self, update: "ConnectionUpdate") -> None:
-        """Übernimmt Verbindungs-Einstellungen aus der UI und persistiert sie in .env."""
         config = self.config
         if update.mode is not None:
             config.mode = update.mode
@@ -171,10 +170,7 @@ class BridgeService:
             config.external_tts_api_key = SecretStr(update.external_tts_api_key.strip())
         if update.tts_voice is not None:
             from app.storage.settings import SettingsUpdate as RuntimeUpdate
-
-            await self.update_settings(
-                RuntimeUpdate(tts_voice=update.tts_voice.strip() or None)
-            )
+            await self.update_settings(RuntimeUpdate(tts_voice=update.tts_voice.strip() or None))
 
         old = self.connector
         self.connector = None
@@ -188,7 +184,6 @@ class BridgeService:
         self.tts_worker.engine = self.tts_engine
 
         from app.storage.envfile import update_env_file
-
         values = {
             "NOEMA_MODE": config.mode,
             "NOEMA_TIKTOK_USERNAME": config.tiktok_username or "",
@@ -197,17 +192,13 @@ class BridgeService:
         if update.deepgram_api_key:
             values["DEEPGRAM_API_KEY"] = config.deepgram_api_key.get_secret_value()
         if update.eulerstream_api_key:
-            values["NOEMA_EULERSTREAM_API_KEY"] = (
-                config.eulerstream_api_key.get_secret_value()
-            )
+            values["NOEMA_EULERSTREAM_API_KEY"] = config.eulerstream_api_key.get_secret_value()
         if update.external_tts_base_url is not None:
             values["EXTERNAL_TTS_BASE_URL"] = config.external_tts_base_url or ""
         if update.external_tts_model:
             values["EXTERNAL_TTS_MODEL"] = config.external_tts_model
         if update.external_tts_api_key:
-            values["EXTERNAL_TTS_API_KEY"] = (
-                config.external_tts_api_key.get_secret_value()
-            )
+            values["EXTERNAL_TTS_API_KEY"] = config.external_tts_api_key.get_secret_value()
         update_env_file(Path(".env"), values)
 
     def connection_payload(self) -> dict[str, object]:
@@ -236,9 +227,11 @@ class BridgeService:
 
     def status_payload(self) -> dict[str, object]:
         connector_status = self.connector.status if self.connector is not None else "unavailable"
+        connector_error = getattr(self.connector, "last_error", None) if self.connector is not None else None
         return {
             "mode": self.config.mode,
             "connector_status": connector_status,
+            "connector_error": connector_error,
             "queue_lengths": {
                 "subscribers": self.bus.queue_lengths,
                 "ring_buffer": len(self.pipeline.ring_buffer),
