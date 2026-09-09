@@ -154,7 +154,7 @@ def test_app_js_has_no_dead_voicebox() -> None:
 
 
 def test_version_is_expected() -> None:
-    assert __version__ == "0.1.31"
+    assert __version__ == "0.1.32"
 
 
 def test_windows_installer_uses_official_portable_python_not_pyinstaller() -> None:
@@ -171,5 +171,6 @@ def test_windows_installer_uses_official_portable_python_not_pyinstaller() -> No
     assert "build-portable-runtime.ps1" in workflow
     assert "Microsoft Defender" in workflow
     assert "runtime\\pythonw.exe" in installer
+    assert "CloseApplicationsFilter=noema-tiktok-bridge.exe,pythonw.exe" in installer
     assert "python.org/ftp/python" in portable_builder
     assert "official-python-embed" in portable_builder

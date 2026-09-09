@@ -19,6 +19,7 @@ class RuntimeSettings(BaseModel):
     spam_window_seconds: float = Field(default=30.0, gt=0, le=3600)
     user_cooldown_seconds: float = Field(default=0.0, ge=0, le=3600)
     tts_enabled: bool = True
+    auto_read_chat: bool = True
     welcome_new_viewers: bool = False
     read_username: bool = False
     tts_max_length: int = Field(default=300, ge=1, le=10_000)
@@ -42,6 +43,7 @@ class SettingsUpdate(BaseModel):
     spam_window_seconds: float | None = Field(default=None, gt=0, le=3600)
     user_cooldown_seconds: float | None = Field(default=None, ge=0, le=3600)
     tts_enabled: bool | None = None
+    auto_read_chat: bool | None = None
     welcome_new_viewers: bool | None = None
     read_username: bool | None = None
     tts_max_length: int | None = Field(default=None, ge=1, le=10_000)
@@ -76,7 +78,12 @@ class SettingsStore:
     def get(self) -> RuntimeSettings:
         with self._lock:
             rows = self._connection.execute("SELECT key, value FROM settings").fetchall()
-        values = {key: json.loads(value) for key, value in rows}
+        known_fields = RuntimeSettings.model_fields
+        values = {
+            key: json.loads(value)
+            for key, value in rows
+            if key in known_fields
+        }
         return RuntimeSettings.model_validate(values)
 
     def update(self, update: SettingsUpdate) -> RuntimeSettings:

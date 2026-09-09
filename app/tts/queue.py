@@ -146,6 +146,8 @@ class TTSQueueWorker:
                 continue
             if event.event_type != EventType.CHAT_MESSAGE or event.message is None:
                 continue
+            if not self.settings.auto_read_chat:
+                continue
             now = time.monotonic()
             last_spoken = self._last_spoken_by_user.get(event.user.user_id)
             if (
