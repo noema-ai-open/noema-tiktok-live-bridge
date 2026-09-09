@@ -20,8 +20,8 @@ Symptome sind `offline`, dauerhaft `connecting` oder wiederholtes
 `reconnecting`.
 
 - `NOEMA_MODE=live` und `NOEMA_TIKTOK_USERNAME` in der tatsächlich verwendeten
-  `.env` prüfen. Den sichtbaren Kanalnamen, nicht eine vollständige URL,
-  eintragen.
+  `.env` prüfen. Den technischen `@`-Benutzernamen ohne `@`, nicht den frei
+  gewählten Anzeigenamen oder eine vollständige URL, eintragen.
 - Sicherstellen, dass der Kanal öffentlich live und vom Rechner aus erreichbar
   ist.
 - Nach Änderungen an `.env` den Prozess neu starten.
@@ -32,6 +32,17 @@ Symptome sind `offline`, dauerhaft `connecting` oder wiederholtes
 
 TikTok LIVE Studio muss für die Audioeinspeisung eingerichtet sein, ist aber
 nicht die Quelle der Connector-Verbindung. Die Bridge steuert LIVE Studio nicht.
+
+### WebSocket wird mit HTTP 400 abgelehnt
+
+Ab Version 0.1.34 wechselt der Connector bei einem von TikTok abgelehnten
+WebSocket-Handshake automatisch zwischen der konfigurierten und der
+Community-Signierung. Zusätzlich probiert er ein Kompatibilitätsprofil ohne das
+historische `echo-protocol`-Unterprotokoll und ohne WebSocket-Transportkompression.
+Die TikTok-Nutzdaten bleiben davon unberührt und werden weiterhin komprimiert
+übertragen. Der zuletzt empfangene Handshake-Grund erscheint in `/status` und im
+Dashboard. Ein HTTP-400-Handshake ist für sich kein Beleg für eine Sperre des
+TikTok-Kontos.
 
 ## TikTokLive fehlt oder ist nach einem Update inkompatibel
 

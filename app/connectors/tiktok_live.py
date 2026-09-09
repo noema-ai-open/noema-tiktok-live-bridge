@@ -187,10 +187,58 @@ def calculate_backoff(
 def _connection_error(exc: BaseException) -> str:
     """Return a useful but bounded reconnect reason for logs, API and UI events."""
     detail = " ".join(str(exc).split())
+    headers = getattr(exc, "headers", None)
+    if headers is not None:
+        try:
+            handshake_reason = headers.get("Handshake-Msg")
+        except (AttributeError, KeyError, TypeError):
+            handshake_reason = None
+        if handshake_reason:
+            reason = " ".join(str(handshake_reason).split())
+            if reason and reason not in detail:
+                detail = f"{detail}; TikTok handshake: {reason}" if detail else reason
     if len(detail) > 300:
         detail = detail[:297] + "..."
     name = type(exc).__name__
     return f"TikTokLive connection failed ({name})" + (f": {detail}" if detail else "")
+
+
+def _is_websocket_http_400(exc: BaseException) -> bool:
+    """Recognize TikTok's rejected WebSocket upgrade across websockets versions."""
+    current: BaseException | None = exc
+    visited: set[int] = set()
+    while current is not None and id(current) not in visited:
+        visited.add(id(current))
+        if getattr(current, "status_code", None) == 400:
+            return True
+        text = " ".join(str(current).lower().split())
+        if "websocket" in text and ("http 400" in text or "status code 400" in text):
+            return True
+        current = current.__cause__ or current.__context__
+    return False
+
+
+def _connection_profiles(api_key: str | None) -> list[tuple[str, str | None, dict[str, Any]]]:
+    """Return safe handshake alternatives for TikTok's changing WebSocket edge."""
+    keys: list[tuple[str, str | None]] = []
+    if api_key:
+        keys.append(("configured-key", api_key))
+    keys.append(("community-key", None))
+
+    compatibility_ws = {
+        # TikTok has intermittently rejected the historical echo-protocol and
+        # permessage-deflate offer with HTTP 400. Payload gzip remains enabled
+        # separately by TikTokLive's `compress` query parameter.
+        "subprotocols": None,
+        "compression": None,
+        "origin": "https://www.tiktok.com",
+    }
+    profiles: list[tuple[str, str | None, dict[str, Any]]] = []
+    for key_name, key in keys:
+        profiles.append((f"default/{key_name}", key, {}))
+    for key_name, key in keys:
+        profiles.append((f"compat/{key_name}", key, compatibility_ws.copy()))
+    return profiles
 
 
 def _load_tiktoklive() -> tuple[type[Any], dict[str, type[Any]], tuple[type[BaseException], ...], Any]:
@@ -366,14 +414,19 @@ class TikTokLiveConnector(BaseConnector):
             return
         client_class, event_classes, offline_errors, web_defaults = dependency
         attempt = 0
+        profiles = _connection_profiles(self.eulerstream_api_key)
+        profile_index = 0
         try:
             while not self._stopping:
                 delay: float
                 self._connected_since = None
                 try:
-                    if self.eulerstream_api_key:
-                        web_defaults.tiktok_sign_api_key = self.eulerstream_api_key
-                    client = client_class(unique_id=self.username)
+                    _, profile_key, ws_kwargs = profiles[profile_index]
+                    # Explicitly clear the global default for the community
+                    # profile. Otherwise a previously configured key leaks into
+                    # the fallback attempt.
+                    web_defaults.tiktok_sign_api_key = profile_key
+                    client = client_class(unique_id=self.username, ws_kwargs=ws_kwargs)
                     self._client = client
                     self._add_listeners(client, event_classes)
                     self._status = "connecting"
@@ -406,10 +459,20 @@ class TikTokLiveConnector(BaseConnector):
                     attempt += 1
                     self._status = "reconnecting"
                     self._last_error = _connection_error(exc)
+                    if _is_websocket_http_400(exc):
+                        previous_profile = profiles[profile_index][0]
+                        profile_index = (profile_index + 1) % len(profiles)
+                        next_profile = profiles[profile_index][0]
+                        logger.warning(
+                            "TikTok rejected handshake profile %s; trying %s next",
+                            previous_profile,
+                            next_profile,
+                        )
                     logger.warning(
-                        "%s; retrying in %.1fs",
+                        "%s; retrying in %.1fs (profile %s)",
                         self._last_error,
                         delay,
+                        profiles[profile_index][0],
                     )
                     await self._emit_status("reconnecting", error=self._last_error)
                 finally:

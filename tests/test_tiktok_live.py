@@ -1,3 +1,4 @@
+import asyncio
 from types import SimpleNamespace
 
 import pytest
@@ -5,6 +6,8 @@ import pytest
 from app.connectors.tiktok_live import (
     TikTokLiveConnector,
     _connection_error,
+    _connection_profiles,
+    _is_websocket_http_400,
     calculate_backoff,
     map_tiktok_event,
 )
@@ -108,6 +111,114 @@ def test_connection_error_keeps_useful_exception_detail_bounded() -> None:
     long_error = _connection_error(RuntimeError("x" * 500))
     assert long_error.endswith("...")
     assert len(long_error) < 360
+
+
+def test_connection_error_includes_tiktok_handshake_reason() -> None:
+    class RejectedHandshake(RuntimeError):
+        status_code = 400
+        headers = {"Handshake-Msg": "invalid route"}
+
+    exc = RejectedHandshake("server rejected WebSocket connection: HTTP 400")
+    error = _connection_error(exc)
+
+    assert "HTTP 400" in error
+    assert "TikTok handshake: invalid route" in error
+    assert _is_websocket_http_400(exc)
+
+
+def test_http_400_detection_walks_exception_chain() -> None:
+    cause = RuntimeError("server rejected WebSocket connection: HTTP 400")
+    wrapper = RuntimeError("connect failed")
+    wrapper.__cause__ = cause
+
+    assert _is_websocket_http_400(wrapper)
+    assert not _is_websocket_http_400(RuntimeError("HTTP 429"))
+
+
+def test_connection_profiles_try_keyless_and_compatible_handshakes() -> None:
+    profiles = _connection_profiles("secret")
+
+    assert [name for name, _, _ in profiles] == [
+        "default/configured-key",
+        "default/community-key",
+        "compat/configured-key",
+        "compat/community-key",
+    ]
+    assert profiles[0][1] == "secret"
+    assert profiles[1][1] is None
+    assert profiles[2][2] == {
+        "subprotocols": None,
+        "compression": None,
+        "origin": "https://www.tiktok.com",
+    }
+
+
+@pytest.mark.asyncio
+async def test_http_400_rotates_through_connection_profiles(monkeypatch) -> None:
+    received: list[dict[str, object]] = []
+    calls: list[tuple[str | None, dict[str, object]]] = []
+    web_defaults = SimpleNamespace(tiktok_sign_api_key=None)
+
+    async def collect(event: dict[str, object]) -> None:
+        received.append(event)
+
+    class RejectedHandshake(RuntimeError):
+        status_code = 400
+        headers: dict[str, str] = {}
+
+    class RejectingClient:
+        def __init__(self, *, unique_id: str, ws_kwargs: dict[str, object]) -> None:
+            assert unique_id == "streamer"
+            calls.append((web_defaults.tiktok_sign_api_key, ws_kwargs))
+
+        def add_listener(self, event_class, listener) -> None:
+            pass
+
+        async def connect(self) -> None:
+            raise RejectedHandshake(
+                "server rejected WebSocket connection: HTTP 400"
+            )
+
+        async def disconnect(self) -> None:
+            pass
+
+    monkeypatch.setattr(
+        "app.connectors.tiktok_live._load_tiktoklive",
+        lambda: (RejectingClient, {}, (), web_defaults),
+    )
+    monkeypatch.setattr(
+        "app.connectors.tiktok_live.calculate_backoff", lambda *args, **kwargs: 0
+    )
+    connector = TikTokLiveConnector(collect, "streamer", eulerstream_api_key="secret")
+
+    await connector.connect()
+    for _ in range(100):
+        if len(calls) >= 4:
+            break
+        await asyncio.sleep(0)
+    await connector.disconnect()
+
+    assert calls[:4] == [
+        ("secret", {}),
+        (None, {}),
+        (
+            "secret",
+            {
+                "subprotocols": None,
+                "compression": None,
+                "origin": "https://www.tiktok.com",
+            },
+        ),
+        (
+            None,
+            {
+                "subprotocols": None,
+                "compression": None,
+                "origin": "https://www.tiktok.com",
+            },
+        ),
+    ]
+    assert any(event["metadata"]["status"] == "reconnecting" for event in received)
 
 
 @pytest.mark.asyncio
