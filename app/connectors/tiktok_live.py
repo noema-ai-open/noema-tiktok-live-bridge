@@ -184,6 +184,15 @@ def calculate_backoff(
     return min(maximum, max(0.0, base * (1 + jitter * (2 * sample - 1))))
 
 
+def _connection_error(exc: BaseException) -> str:
+    """Return a useful but bounded reconnect reason for logs, API and UI events."""
+    detail = " ".join(str(exc).split())
+    if len(detail) > 300:
+        detail = detail[:297] + "..."
+    name = type(exc).__name__
+    return f"TikTokLive connection failed ({name})" + (f": {detail}" if detail else "")
+
+
 def _load_tiktoklive() -> tuple[type[Any], dict[str, type[Any]], tuple[type[BaseException], ...], Any]:
     package = importlib.import_module("TikTokLive")
     events_module = importlib.import_module("TikTokLive.events")
@@ -335,6 +344,7 @@ class TikTokLiveConnector(BaseConnector):
                             self._seen_chat.pop(next(iter(self._seen_chat)))
                     if event_name == "ConnectEvent":
                         self._status = "connected"
+                        self._last_error = None
                         self._connected_since = time.monotonic()
                     elif event_name == "DisconnectEvent":
                         self._status = "disconnected"
@@ -384,6 +394,7 @@ class TikTokLiveConnector(BaseConnector):
                         break
                     attempt = 0
                     self._status = "offline"
+                    self._last_error = None
                     await self._emit_status("offline")
                     delay = self.live_offline_poll_seconds
                 except Exception as exc:
@@ -394,13 +405,11 @@ class TikTokLiveConnector(BaseConnector):
                     delay = calculate_backoff(attempt)
                     attempt += 1
                     self._status = "reconnecting"
-                    self._last_error = (
-                        f"TikTokLive connection failed ({type(exc).__name__})"
-                    )
+                    self._last_error = _connection_error(exc)
                     logger.warning(
-                        "TikTokLive connection failed; retrying in %.1fs (%s)",
+                        "%s; retrying in %.1fs",
+                        self._last_error,
                         delay,
-                        type(exc).__name__,
                     )
                     await self._emit_status("reconnecting", error=self._last_error)
                 finally:
