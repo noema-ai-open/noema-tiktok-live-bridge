@@ -4,6 +4,7 @@ import pytest
 
 from app.connectors.tiktok_live import (
     TikTokLiveConnector,
+    _connection_error,
     calculate_backoff,
     map_tiktok_event,
 )
@@ -96,6 +97,17 @@ def test_backoff_is_exponential_capped_and_has_bounded_jitter() -> None:
     assert calculate_backoff(2, random_value=0.0) == 16
     assert calculate_backoff(2, random_value=1.0) == 24
     assert calculate_backoff(20, random_value=1.0) == 300
+
+
+def test_connection_error_keeps_useful_exception_detail_bounded() -> None:
+    error = _connection_error(RuntimeError("signature service returned 429"))
+    assert error == (
+        "TikTokLive connection failed (RuntimeError): "
+        "signature service returned 429"
+    )
+    long_error = _connection_error(RuntimeError("x" * 500))
+    assert long_error.endswith("...")
+    assert len(long_error) < 360
 
 
 @pytest.mark.asyncio
