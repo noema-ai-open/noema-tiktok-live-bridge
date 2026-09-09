@@ -170,7 +170,6 @@ async function refreshKittSpeakingState() {
     const state = await response.json();
     setKittSpeaking(Boolean(state && state.speaking));
   } catch (_) {
-    // Bei einem kurzen API-Aussetzer den letzten sichtbaren Zustand behalten.
   } finally {
     kittStateRequestRunning = false;
   }
@@ -193,7 +192,6 @@ async function synchronizeVersion() {
       document.title = `NOEMA Live Bridge v${version}`;
     }
   } catch (_) {
-    // Die feste Versionsangabe im HTML bleibt als sicherer Fallback sichtbar.
   }
 }
 
@@ -216,12 +214,89 @@ function refreshStatusEventVisibility() {
   list.dataset.statusOnly = !visibleEvents && !nativeEmptyState ? "true" : "false";
 }
 
+let lastConnectorError = null;
+let connectorDiagnosticRequestRunning = false;
+
+function appendConnectorDiagnostic(errorText) {
+  const logList = document.querySelector("#log-list");
+  const logCount = document.querySelector("#log-count");
+  if (!logList || !errorText) {
+    return;
+  }
+  const entry = document.createElement("li");
+  entry.className = "log-entry";
+
+  const time = document.createElement("time");
+  time.className = "log-time";
+  time.textContent = new Date().toLocaleTimeString("de-DE", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
+  const label = document.createElement("span");
+  label.className = "log-level";
+  label.dataset.level = "error";
+  label.textContent = "TIKTOK-FEHLER";
+
+  const content = document.createElement("span");
+  content.className = "log-text";
+  content.textContent = errorText;
+
+  entry.append(time, label, content);
+  logList.append(entry);
+  while (logList.children.length > 200) {
+    logList.firstElementChild.remove();
+  }
+  if (logCount) {
+    logCount.textContent = `${logList.children.length} / 200`;
+  }
+  logList.scrollTop = logList.scrollHeight;
+}
+
+async function refreshConnectorDiagnostic() {
+  if (connectorDiagnosticRequestRunning || document.hidden) {
+    return;
+  }
+  connectorDiagnosticRequestRunning = true;
+  try {
+    const response = await fetch("/status", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const status = await response.json();
+    const errorText = status && status.connector_error ? String(status.connector_error) : "";
+    const connectionStatus = document.querySelector("#connection-status");
+
+    if (errorText) {
+      if (connectionStatus) {
+        connectionStatus.textContent = `${status.connector_status || "reconnecting"}: ${errorText}`;
+        connectionStatus.title = errorText;
+      }
+      if (errorText !== lastConnectorError) {
+        lastConnectorError = errorText;
+        appendConnectorDiagnostic(errorText);
+      }
+    } else {
+      lastConnectorError = null;
+      if (connectionStatus) {
+        connectionStatus.removeAttribute("title");
+      }
+    }
+  } catch (_) {
+  } finally {
+    connectorDiagnosticRequestRunning = false;
+  }
+}
+
 installKittStyles();
 mountEqualizer();
 synchronizeVersion();
 refreshStatusEventVisibility();
 refreshKittSpeakingState();
+refreshConnectorDiagnostic();
 window.setInterval(refreshKittSpeakingState, 250);
+window.setInterval(refreshConnectorDiagnostic, 2000);
 
 const chatList = document.querySelector("#chat-list");
 if (chatList) {
@@ -233,5 +308,6 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
     mountEqualizer();
     refreshKittSpeakingState();
+    refreshConnectorDiagnostic();
   }
 });
