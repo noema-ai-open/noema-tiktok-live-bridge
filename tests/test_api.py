@@ -17,6 +17,7 @@ async def test_health_status_events_and_fallback_with_asgi_transport(fallback_ap
             assert status.json() == {
                 "mode": "fallback",
                 "connector_status": "unavailable",
+                "connector_error": None,
                 "queue_lengths": {"subscribers": [0], "ring_buffer": 0},
             }
 
