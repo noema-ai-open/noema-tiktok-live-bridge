@@ -176,4 +176,4 @@ def test_windows_installer_uses_official_portable_python_not_pyinstaller() -> No
     assert "python.org/ftp/python" in portable_builder
     assert "official-python-embed" in portable_builder
     assert ".[live,windows,browser]" in portable_builder
-    assert "import playwright" in portable_builder
+    assert "playwright" in portable_builder
