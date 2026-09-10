@@ -42,7 +42,7 @@ if (-not (Test-Path $pthFile)) {
 
 Push-Location $repoRoot
 try {
-    python -m pip install --disable-pip-version-check --no-compile --target $sitePackages ".[live,windows]"
+    python -m pip install --disable-pip-version-check --no-compile --target $sitePackages ".[live,windows,browser]"
 } finally {
     Pop-Location
 }
@@ -66,7 +66,7 @@ if (-not (Test-Path $portablePython)) {
     throw "Portable python.exe fehlt."
 }
 
-& $portablePython -c "from app.version import __version__; import fastapi, uvicorn, edge_tts, TikTokLive, win32com.client; assert __version__ == '$Version', (__version__, '$Version'); print('Portable runtime OK', __version__)"
+& $portablePython -c "from app.version import __version__; import fastapi, uvicorn, edge_tts, TikTokLive, playwright, win32com.client; assert __version__ == '$Version', (__version__, '$Version'); print('Portable runtime OK', __version__)"
 if ($LASTEXITCODE -ne 0) {
     throw "Portable Laufzeit konnte die Anwendung nicht importieren."
 }
@@ -74,6 +74,7 @@ if ($LASTEXITCODE -ne 0) {
 $index = Get-Content (Join-Path $runtimeRoot "frontend\index.html") -Raw
 $ui = Get-Content (Join-Path $runtimeRoot "frontend\noema-ui.js") -Raw
 $kittCss = Get-Content (Join-Path $runtimeRoot "frontend\kitt-header.css") -Raw
+$sessionUi = Get-Content (Join-Path $runtimeRoot "frontend\tiktok-session.js") -Raw
 
 if ($index -match "kitt-voicebox" -or $index -match "VOICE LINK") {
     throw "Veraltetes großes KITT-Modul ist noch im Paket enthalten."
@@ -82,10 +83,13 @@ if ($ui -notmatch "mountEqualizer" -or $kittCss -notmatch "\.kitt-eq") {
     throw "Der KITT-Equalizer fehlt im Paket."
 }
 if ($ui -match "mountKittStrip" -or $kittCss -match "\.kitt-strip") {
-    throw "Veralteter KITT-Scanner ist noch im Paket enthalten."
+    throw "Veralteter KITT-Scanner ist noch im Installer."
 }
 if ($kittCss -match "\.kitt-console") {
     throw "Veraltete KITT-Konsolenregeln sind noch im Paket enthalten."
+}
+if ($sessionUi -notmatch "Bei TikTok anmelden" -or $sessionUi -notmatch "/tiktok/session/login") {
+    throw "TikTok Browser-Login fehlt im Installer."
 }
 
 $buildInfo = [ordered]@{
