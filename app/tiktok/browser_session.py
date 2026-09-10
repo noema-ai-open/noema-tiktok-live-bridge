@@ -115,6 +115,7 @@ class TikTokBrowserSession:
                     user_data_dir=str(self.profile_dir),
                     channel=channel,
                     headless=headless,
+                    chromium_sandbox=True,
                     viewport=None if not headless else {"width": 1280, "height": 900},
                     args=["--disable-background-timer-throttling"],
                 )
