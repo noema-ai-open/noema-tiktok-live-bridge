@@ -1,5 +1,34 @@
 "use strict";
 
+function mountTikTokSessionUi() {
+  if (document.querySelector("#tiktok-session-box")) return;
+  const usernameInput = document.querySelector("#conn-username");
+  const usernameField = usernameInput ? usernameInput.closest(".field") : null;
+  if (!usernameField || !usernameField.parentElement) return;
+
+  const box = document.createElement("div");
+  box.className = "field field--wide";
+  box.id = "tiktok-session-box";
+  box.innerHTML = `
+    <div class="field-label-line">
+      <label>TikTok Browser-Session</label>
+      <strong id="tiktok-session-status">WIRD GEPRÜFT …</strong>
+    </div>
+    <p class="key-hint" id="tiktok-session-detail">NOEMA prüft die lokale TikTok-Session.</p>
+    <div class="form-actions" style="justify-content:flex-start;gap:.55rem;flex-wrap:wrap;margin-top:.55rem">
+      <button class="primary-button" id="tiktok-login" type="button">Bei TikTok anmelden</button>
+      <button class="secondary-button" id="tiktok-session-refresh" type="button">Login prüfen</button>
+      <button class="secondary-button" id="tiktok-room-check" type="button">LIVE prüfen</button>
+      <button class="ghost-button" id="tiktok-session-reset" type="button">Session löschen</button>
+    </div>
+    <p class="key-hint">Die Anmeldung öffnet Microsoft Edge oder Chrome mit einem eigenen lokalen NOEMA-Profil. Dein TikTok-Passwort wird ausschließlich auf tiktok.com eingegeben und nicht von NOEMA gespeichert.</p>
+    <p class="action-message" id="tiktok-room-result" role="status"></p>
+  `;
+  usernameField.insertAdjacentElement("afterend", box);
+}
+
+mountTikTokSessionUi();
+
 const sessionStatus = document.querySelector("#tiktok-session-status");
 const sessionDetail = document.querySelector("#tiktok-session-detail");
 const loginButton = document.querySelector("#tiktok-login");
@@ -16,7 +45,6 @@ function setSessionText(data) {
   const state = data && data.state ? data.state : "idle";
   const loggedIn = Boolean(data && data.logged_in);
   sessionStatus.textContent = loggedIn ? "ANGEMELDET" : state.replaceAll("_", " ").toUpperCase();
-  sessionStatus.dataset.state = loggedIn ? "connected" : (state === "error" ? "error" : "pending");
   if (data && data.error) {
     sessionDetail.textContent = data.error;
   } else if (loggedIn) {
