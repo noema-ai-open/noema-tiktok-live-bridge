@@ -42,6 +42,12 @@ def _frontend_index_html() -> str:
         )
         html = html.replace(marker, kitt_link)
 
+    if "tiktok-session.js" not in html:
+        html = html.replace(
+            "</body>",
+            f'    <script src="/tiktok-session.js{version_query}"></script>\n  </body>',
+        )
+
     html = re.sub(
         r"<title>NOEMA Live Bridge v[^<]+</title>",
         f"<title>NOEMA Live Bridge v{__version__}</title>",
