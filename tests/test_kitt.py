@@ -114,6 +114,7 @@ async def test_frontend_uses_versioned_assets_and_disables_cache(tmp_path) -> No
     assert f'/kitt-header.css?v={__version__}' in response.text
     assert f'/app.js?v={__version__}' in response.text
     assert f'/noema-ui.js?v={__version__}' in response.text
+    assert f'/tiktok-session.js?v={__version__}' in response.text
     assert f'>v{__version__}</span>' in response.text
     assert "kitt-voicebox" not in response.text
     assert "VOICE LINK" not in response.text
@@ -154,7 +155,7 @@ def test_app_js_has_no_dead_voicebox() -> None:
 
 
 def test_version_is_expected() -> None:
-    assert __version__ == "0.1.34"
+    assert __version__ == "0.2.0"
 
 
 def test_windows_installer_uses_official_portable_python_not_pyinstaller() -> None:
@@ -174,3 +175,5 @@ def test_windows_installer_uses_official_portable_python_not_pyinstaller() -> No
     assert "CloseApplicationsFilter=noema-tiktok-bridge.exe,pythonw.exe" in installer
     assert "python.org/ftp/python" in portable_builder
     assert "official-python-embed" in portable_builder
+    assert ".[live,windows,browser]" in portable_builder
+    assert "playwright" in portable_builder

@@ -8,6 +8,7 @@ from app.api.schemas import ConnectionUpdate, FallbackMessage, TTSTestRequest
 from app.audio.devices import list_audio_devices
 from app.service import BridgeService
 from app.storage.settings import RuntimeSettings, SettingsUpdate
+from app.tiktok.browser_session import get_browser_session
 
 router = APIRouter()
 
@@ -98,6 +99,42 @@ async def audio_devices() -> list[dict[str, str]]:
     return list_audio_devices()
 
 
+@router.get("/tiktok/session")
+async def tiktok_session_status() -> dict[str, object]:
+    """Return cached local TikTok browser-session status without exposing cookies."""
+    return get_browser_session().payload()
+
+
+@router.post("/tiktok/session/login", status_code=202)
+async def tiktok_session_login() -> dict[str, object]:
+    """Open a dedicated local Edge/Chrome window for manual TikTok sign-in."""
+    return await get_browser_session().start_login()
+
+
+@router.post("/tiktok/session/refresh")
+async def tiktok_session_refresh() -> dict[str, object]:
+    """Verify whether the dedicated browser profile is still signed into TikTok."""
+    return await get_browser_session().refresh()
+
+
+@router.post("/tiktok/session/reset")
+async def tiktok_session_reset() -> dict[str, object]:
+    """Delete NOEMA's dedicated TikTok browser profile and local session metadata."""
+    return await get_browser_session().reset()
+
+
+@router.get("/tiktok/room")
+async def tiktok_room_check(username: str = Query(min_length=1, max_length=100)) -> dict[str, object]:
+    """Resolve LIVE room state inside the local browser session."""
+    try:
+        return await get_browser_session().check_room(username)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:
+        detail = " ".join(str(exc).split())[:300] or type(exc).__name__
+        raise HTTPException(status_code=502, detail=detail) from exc
+
+
 @router.post("/fallback/message")
 async def fallback_message(request: Request, body: FallbackMessage) -> dict[str, object]:
     service = _service(request)
@@ -131,8 +168,6 @@ async def websocket_events(websocket: WebSocket) -> None:
     service: BridgeService = websocket.app.state.bridge
     queue = await service.bus.subscribe(include_blocked=True)
     try:
-        # Subscribe before accepting so an event cannot slip through between the
-        # completed WebSocket handshake and queue registration.
         await websocket.accept()
         while True:
             event_task = asyncio.create_task(queue.get())
@@ -182,5 +217,15 @@ async def get_connection_keys(request: Request) -> dict[str, object]:
 @router.post("/connection")
 async def update_connection(request: Request, body: ConnectionUpdate) -> dict[str, object]:
     service = _service(request)
+    target_mode = body.mode if body.mode is not None else service.config.mode
+    browser_session = get_browser_session()
+    if target_mode == "live" and browser_session.profile_dir.exists():
+        try:
+            await browser_session.apply_to_tiktoklive_defaults()
+        except Exception:
+            # Browser context is an enhancement; the established anonymous
+            # connector still gets a chance to connect and will expose its own
+            # detailed error through /status.
+            pass
     await service.apply_connection(body)
     return service.connection_payload()
