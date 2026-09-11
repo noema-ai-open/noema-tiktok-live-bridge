@@ -90,9 +90,13 @@
                   <option value="sapi">Windows-Stimme (kostenlos)</option>
                   <option value="edge">Microsoft Edge-Stimmen (kostenlos, viele Sprachen)</option>
                   <option value="deepgram">Deepgram (API-Key nötig)</option>
+                  <option value="piper_jarvis">Piper JARVIS (lokal, kostenlos, Englisch)</option>
                   <option value="external">Externer Anbieter (.env)</option>
                   <option value="dummy">Stumm (Test)</option>
                 </select>
+              </div>
+              <div class="field field--wide" data-engine-only="piper_jarvis">
+                <p class="key-hint">Lokale JARVIS-ähnliche British-English-Stimme. Beim ersten Start wird das freie Piper-Modell einmalig heruntergeladen; danach läuft die Sprachausgabe lokal.</p>
               </div>
               <div class="field field--wide" data-engine-only="deepgram">
                 <label for="conn-deepgram">Deepgram-API-Key</label>
