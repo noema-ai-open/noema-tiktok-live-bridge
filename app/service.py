@@ -83,10 +83,15 @@ class BridgeService:
             return EdgeTTSEngine(
                 player_command=config.external_tts_player_command if config else None,
             )
-        if configured_engine == "piper_jarvis":
+        if configured_engine in {"piper_jarvis", "piper_thorsten_high", "piper_thorsten_emotional"}:
             from app.tts.piper_jarvis import PiperJarvisEngine
 
-            return PiperJarvisEngine()
+            profile = {
+                "piper_jarvis": "jarvis",
+                "piper_thorsten_high": "thorsten_high",
+                "piper_thorsten_emotional": "thorsten_emotional",
+            }[configured_engine]
+            return PiperJarvisEngine(profile=profile)
         if configured_engine == "deepgram":
             from app.tts.deepgram import DeepgramTTSEngine
 
