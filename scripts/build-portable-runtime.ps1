@@ -66,7 +66,7 @@ if (-not (Test-Path $portablePython)) {
     throw "Portable python.exe fehlt."
 }
 
-& $portablePython -c "from app.version import __version__; import fastapi, uvicorn, edge_tts, TikTokLive, playwright, win32com.client; assert __version__ == '$Version', (__version__, '$Version'); print('Portable runtime OK', __version__)"
+& $portablePython -c "from app.version import __version__; import fastapi, uvicorn, edge_tts, TikTokLive, playwright, win32com.client, piper; assert __version__ == '$Version', (__version__, '$Version'); print('Portable runtime OK', __version__)"
 if ($LASTEXITCODE -ne 0) {
     throw "Portable Laufzeit konnte die Anwendung nicht importieren."
 }
